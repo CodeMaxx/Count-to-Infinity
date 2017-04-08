@@ -24,7 +24,7 @@ void read_thread(char buffer[], int *newsockfd)
     if (n < 0) error("ERROR reading from socket");
     if(buffer[0] == '/')
     {
-        if(strcmp(buffer, "/help"))
+        if(strcmp(buffer, "/help\n"))
         {
             printf("/help - To get help\n");
             printf("/register [username] - To start registration process\n");
