@@ -2,6 +2,9 @@
 
 ### CS 252 - Computer Networks Lab Project, IIT Bombay
 
+**Dependencies**
+ [libsodium](https://github.com/jedisct1/libsodium) 
+
 **Contributors:**
 
 [Akash Trehan](https://github.com/CodeMaxx) | 
