@@ -23,12 +23,12 @@ void read_thread(char buffer[], int *newsockfd)
     int n;
     while(1)
     {
-    bzero(buffer,256);
-    n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
-    if (n < 0) error("ERROR reading from socket");
-    buffer[n-1] = '\0';
-    printf("Client: %s %d\n",buffer, n);
- }
+        bzero(buffer,256);
+        n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
+        if (n < 0) error("ERROR reading from socket");
+        buffer[n-1] = '\0';
+        printf("Client: %s %d\n",buffer, n);
+    }
 }
 
 void write_thread(char buffer[], int *newsockfd)
@@ -36,12 +36,12 @@ void write_thread(char buffer[], int *newsockfd)
     int n;
     while(1)
     {
-    bzero(buffer,256);
-    printf("You: ");
-    fgets(buffer,255,stdin);
-    n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
-    if (n < 0) error("ERROR writing to socket");
- }
+        bzero(buffer,256);
+        printf("You: ");
+        fgets(buffer,255,stdin);
+        n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
+        if (n < 0) error("ERROR writing to socket");
+    }
 }
 
 int main(int argc, char *argv[])

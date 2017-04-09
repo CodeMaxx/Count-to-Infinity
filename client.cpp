@@ -49,12 +49,12 @@ void write_thread(char buffer[], int *newsockfd)
     int n;
     while(1)
     {
-    bzero(buffer,256);
-    printf("You: ");
-    fgets(buffer,255,stdin);
-    n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
-    if (n < 0) error("ERROR writing to socket");
- }
+        bzero(buffer,256);
+        printf("You: ");
+        fgets(buffer,255,stdin);
+        n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
+        if (n < 0) error("ERROR writing to socket");
+    }
 }
 
 
