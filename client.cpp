@@ -22,25 +22,8 @@ void read_thread(char buffer[], int *newsockfd)
     bzero(buffer,256);
     n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
     if (n < 0) error("ERROR reading from socket");
-    if(buffer[0] == '/')
-    {
-        if(strcmp(buffer, "/help\n"))
-        {
-            printf("/help - To get help\n");
-            printf("/register [username] - To start registration process\n");
-            printf("/login [username] [password]\n");
-            printf("/chat [Friend's Username] - To chat with a friend\n");
-            printf("/showall - Show all registered users\n");
-            printf("/showOnline - Show all online users\n");
-            printf("/logout - To logout and quit\n");
-            printf("/sendfile - To send file to friend\n");
-        }
-    }
-    else
-    {
-        buffer[n-1] = '\0';
-        printf("Client: %s %d\n",buffer, n);
-    }
+    buffer[n-1] = '\0';
+    printf("Client: %s %d\n",buffer, n);
  }
 }
 
@@ -52,8 +35,25 @@ void write_thread(char buffer[], int *newsockfd)
         bzero(buffer,256);
         printf("You: ");
         fgets(buffer,255,stdin);
-        n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
-        if (n < 0) error("ERROR writing to socket");
+        if(buffer[0] == '/')
+        {
+            if(strcmp(buffer, "/help"))
+            {
+                printf("/help - To get help\n");
+                printf("/register [username] - To start registration process\n");
+                printf("/login [username] [password]\n");
+                printf("/chat [Friend's Username] - To chat with a friend\n");
+                printf("/showall - Show all registered users\n");
+                printf("/showOnline - Show all online users\n");
+                printf("/logout - To logout and quit\n");
+                printf("/sendfile - To send file to friend\n");
+            }
+        }
+        else
+        {
+            n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
+            if (n < 0) error("ERROR writing to socket");
+        }
     }
 }
 
