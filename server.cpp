@@ -21,7 +21,7 @@
 
 int portno;
 
-pair<std::string, std::string> hash_password(std::string password) {
+std::pair<std::string, std::string> hash_password(std::string password) {
     const char* PASSWORD = password.c_str();
     unsigned char salt[crypto_pwhash_SALTBYTES];
     unsigned char key[KEY_LEN];
@@ -35,7 +35,7 @@ pair<std::string, std::string> hash_password(std::string password) {
         /* out of memory */
     }
 
-    pair<std::string, std::string> p;
+    std::pair<std::string, std::string> p;
     p.first = (reinterpret_cast<char*>(key));
     p.second = (reinterpret_cast<char*>(salt));
     return p;
