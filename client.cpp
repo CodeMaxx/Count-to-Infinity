@@ -9,6 +9,7 @@
 #include <thread>
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 void error(const char *msg)
 {
@@ -32,25 +33,47 @@ void write_helper(char buffer[], int *newsockfd)
     if (n < 0) error("ERROR writing to socket");
 }
 
+std::vector<std::string> break_string(std::string msg)
+{
+    std::stringstream strstream(msg);
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    while(std::getline(strstream, segment, ':'))
+    {
+       seglist.push_back(segment);
+    }
+
+    return seglist;
+}
+
 void read_thread(char buffer[], int *newsockfd)
 {
     int n;
+   	char endOfMessage = '#';
+    std::string buffer_str;
+
     while(1)
     {
-    bzero(buffer,256);
-    n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
-    if (n < 0) error("ERROR reading from socket");
-    buffer[n-1] = '\0';
-    printf("Client: %s %d\n",buffer, n);
- }
+    	bzero(buffer,256);
+    	n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
+    	if (n < 0)
+    		error("ERROR reading from socket");
+    	else
+    		buffer_str = buffer;
+
+    	while(buffer_str.back() != endOfMessage){
+        	bzero(buffer, 256);
+        	n = read(*newsockfd, buffer, 255);
+        	if (n < 0) 
+            	error("ERROR reading from socket");
+       		else    
+        		buffer_str.append(buffer);   
+    	}
+    	//buffer[n-1] = '\0';
+    	//printf("Client: %s %d\n",buffer, n);
+ 	}
 }
-
-/*void extract_input(std::string buffer){
-	std::vector<std::string> strings;
-
-
-
-}*/
 
 void write_thread(char buffer[], int *newsockfd)
 {
@@ -123,7 +146,7 @@ void write_thread(char buffer[], int *newsockfd)
 
             }
             else if(command.substr(0, strlen("/showall")).compare("/showall") == 0){
-            	
+
             }
             else if(command.substr(0, strlen("/showOnline")).compare("/showOnline") == 0){
 
