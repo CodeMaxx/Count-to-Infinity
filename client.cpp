@@ -62,7 +62,7 @@ void write_thread(char buffer[], int *newsockfd)
             if(str_buffer.compare("/help") == 0)
             {
                 printf("/help - To get help\n");
-                printf("/register [username] - To start registration process\n");
+                printf("/register [username] [Name] [Password] - To start registration process\n");
                 printf("/login [username] [password]\n");
                 printf("/chat [Friend's Username] - To chat with a friend\n");
                 printf("/showall - Show all registered users\n");
@@ -75,11 +75,6 @@ void write_thread(char buffer[], int *newsockfd)
                 write_helper(str_buffer, newsockfd); // Ideally we should get a "Username already exists error here"
                                                  // but due to threads it is a problem. Maybe we should make
                                                  // threads variables public and then synchronise somehow.
-                printf("Name: ");
-                std::string name, password;
-                std::cin >> name;
-                printf("Password: ");
-                std::cin >> password;
             }
         }
         else

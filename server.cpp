@@ -19,6 +19,14 @@ void error(const char *msg)
     exit(1);
 }
 
+std::vector<std::string> break_string(string msg)
+{
+    std::istringstream buffer_str(msg);
+    std::vector<std::string> ret{std::istream_iterator<std::string>(buffer_str),
+                                 std::istream_iterator<std::string>()};
+    return ret;
+}
+
 void read_thread(char buffer[], int *newsockfd)
 {
     int n;
@@ -27,6 +35,7 @@ void read_thread(char buffer[], int *newsockfd)
         bzero(buffer,256);
         n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0) error("ERROR reading from socket");
+        string buffer_str;
         printf("Client: %s %d\n",buffer, n);
     }
 }
