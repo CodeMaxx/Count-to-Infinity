@@ -14,6 +14,14 @@ void error(const char *msg)
     exit(0);
 }
 
+void write_helper(string buffer, int*newsockfd); // Define this
+
+void write_helper(char buffer[], int *newsockfd)
+{
+    n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
+    if (n < 0) error("ERROR writing to socket");
+}
+
 void read_thread(char buffer[], int *newsockfd)
 {
     int n;
@@ -48,11 +56,21 @@ void write_thread(char buffer[], int *newsockfd)
                 printf("/logout - To logout and quit\n");
                 printf("/sendfile - To send file to friend\n");
             }
+            else if(strncmp(buffer, "/register", strlen("/register")))
+            {
+                write_helper(buffer, newsockfd); // Ideally we should get a "Username already exists error here"
+                                                 // but due to threads it is a problem. Maybe we should make
+                                                 // threads variables public and then synchronise somehow.
+                printf("Name: ");
+                string name, password;
+                std::cin >> name;
+                printf("Password: ");
+                std::cin >> password;
+            }
         }
         else
         {
-            n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
-            if (n < 0) error("ERROR writing to socket");
+            write_helper(buffer, newsockfd);
         }
     }
 }
