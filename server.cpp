@@ -104,9 +104,8 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             //name 
             str = str + '"' + *it + '"' + ", ";
             ++it;
-            //lastseen
             //password
-            std::string password = *it ; 
+            std::string password = *it ;
             std::pair<std::string,std::string> temp = hash_password(password);
             std::string new_password = temp.first;
             std::string salt = temp.second;
@@ -114,6 +113,8 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             // std::string salt = "madhav";
             str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
             ++it;
+
+            //lastseen
             time_t currentTime;
             struct tm *localTime;
 
@@ -137,7 +138,7 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 
             /* Execute SQL statement */
             int rc;
-            fprintf(stderr,sql1);
+            //fprintf(stderr,sql1);
             rc = sqlite3_exec(db, sql1, callback, 0, &zErrMsg);
             fprintf(stderr, "%s\n",sql1);
             if( rc != SQLITE_OK )
@@ -151,7 +152,7 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             }
        }
     }
-    sqlite3_finalize(selectstmt);    
+    sqlite3_finalize(selectstmt);
 }
 
 void error(const char *msg)
@@ -224,6 +225,7 @@ void read_thread(char buffer[], int *newsockfd)
 
         std::cout << buffer_str << std::endl; 
 
+
         while(buffer_str.back() != endOfMessage){
             bzero(buffer, 256);
             n = read(*newsockfd, buffer, 255);
@@ -233,18 +235,19 @@ void read_thread(char buffer[], int *newsockfd)
                 buffer_str.append(buffer);
         }
 
-        std::cout << buffer_str.erase(buffer_str.size() - 1, 1) << std::endl; 
+        buffer_str.pop_back();
 
         auto x = break_string(buffer_str);
         for(auto y : x) {
             std::cout << y << std::endl;
         }
+
         if(!strncmp(buffer_str.c_str(), "/register", strlen("/register")))
         {
             register_func(break_string(buffer_str), db, zErrMsg);
         }
 
-        printf("Client: %s %d\n",buffer, n);
+        printf("Client: %s %d\n",buffer_str, n);
     }
 }
 
