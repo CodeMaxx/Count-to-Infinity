@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <thread>
+#include <vector>
 
 void error(const char *msg)
 {
@@ -26,7 +27,6 @@ void read_thread(char buffer[], int *newsockfd)
         bzero(buffer,256);
         n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0) error("ERROR reading from socket");
-        buffer[n-1] = '\0';
         printf("Client: %s %d\n",buffer, n);
     }
 }

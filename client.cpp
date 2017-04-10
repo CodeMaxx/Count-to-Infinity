@@ -8,6 +8,7 @@
 #include <netdb.h>
 #include <thread>
 #include <iostream>
+#include <vector>
 
 void error(const char *msg)
 {
