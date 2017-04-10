@@ -1,3 +1,10 @@
+
+
+/*******************************************/
+/////// USE std:: WHEREVER REQUIRED /////////
+/*******************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,9 +16,38 @@
 #include <thread>
 #include <iostream>
 #include <vector>
+#include <unordered_map>
 #include <signal.h> // For caputuring ctrl+c and freeing the port
 
 int portno;
+
+class chat
+{
+    struct history
+    {
+        struct message // Stores a messages and corresponding reply
+        {
+            std::string msg;
+            bool mine; // = 1 if message is mine else 0
+        };
+
+        struct frnd // History of one friend
+        {
+            std::string username;
+            std::string name;
+            vector<message> messages;
+        };
+
+        std::unordered_map<std::string, frnd> user_to_frnd; // Conver username to index for faster access of history
+    };
+
+public:
+    std::vector<std::string> online; // Vector containing username of online friends
+    std::vector<std::string> all; // Vector containing list of all friends
+    history hist; // Contains history of current session
+    std::string username; // Username of client
+    string name; // Name of client
+};
 
 void error(const char *msg)
 {

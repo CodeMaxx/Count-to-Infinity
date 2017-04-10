@@ -1,5 +1,12 @@
 /* A simple server in the internet domain using TCP
    The port number is passed as an argument */
+
+
+/*******************************************/
+/////// USE std:: WHEREVER REQUIRED /////////
+/*******************************************/
+
+
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
