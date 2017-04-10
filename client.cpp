@@ -9,11 +9,34 @@
 #include <thread>
 #include <iostream>
 #include <vector>
+#include <signal.h> // For caputuring ctrl+c and freeing the port
+
+int portno;
 
 void error(const char *msg)
 {
     perror(msg);
     exit(0);
+}
+
+void my_handler(int s)
+{
+    int optval = 1;
+    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
+    exit(0);
+}
+
+void signal_capture(int portno)
+{
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    while(1)
+    {
+        sigaction(SIGINT, &sigIntHandler, NULL);
+    }
 }
 
 void write_helper(std::string str_buffer, int* newsockfd){ // Define this
@@ -93,7 +116,7 @@ void write_thread(char buffer[], int *newsockfd)
                 message.append(username.append(":"));
                 message.append(name.append(":"));
                 message.append(password.append(endOfMessage));
-                
+
                 write_helper(message, newsockfd); // Ideally we should get a "Username already exists error here"
                                                  // but due to threads it is a problem. Maybe we should make
                                                  // threads variables public and then synchronise somehow.
@@ -114,7 +137,7 @@ void write_thread(char buffer[], int *newsockfd)
 
 int main(int argc, char *argv[])
 {
-    int sockfd, portno, n;
+    int sockfd, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
@@ -151,6 +174,7 @@ int main(int argc, char *argv[])
         error("ERROR connecting");
     std::thread read_th(read_thread,read_buffer, &sockfd);
     std::thread write_th(write_thread,write_buffer, &sockfd);
+    std::thread signal_th(signal_capture, portno);
 
     //read_th.join();
     while(1){;}

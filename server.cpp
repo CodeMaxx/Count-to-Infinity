@@ -12,11 +12,36 @@
 #include <netinet/in.h>
 #include <thread>
 #include <vector>
+#include <signal.h>
+#include <sqlite3.h>
+#include <sstream>
+
+int portno;
 
 void error(const char *msg)
 {
     perror(msg);
     exit(1);
+}
+
+void my_handler(int s)
+{
+    int optval = 1;
+    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
+    exit(0);
+}
+
+void signal_capture(int portno)
+{
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    while(1)
+    {
+        sigaction(SIGINT, &sigIntHandler, NULL);
+    }
 }
 
 std::vector<std::string> break_string(std::string msg)
@@ -40,11 +65,10 @@ void read_thread(char buffer[], int *newsockfd)
     char *zErrMsg = 0;
 
     /* Open database */
-    rc = sqlite3_open("main.db", &db);
+    int rc = sqlite3_open("main.db", &db);
     if(rc)
     {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-      return(0);
     }
     else
     {
@@ -56,7 +80,7 @@ void read_thread(char buffer[], int *newsockfd)
         bzero(buffer,256);
         n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0) error("ERROR reading from socket");
-        string buffer_str;
+        std::string buffer_str;
 
         if(strncmp(buffer_str.c_str(), "/register", strlen("/register")))
         {
@@ -82,7 +106,7 @@ void write_thread(char buffer[], int *newsockfd)
 
 int main(int argc, char *argv[])
 {
-    int sockfd, newsockfd, portno; // Socket handles are also file descriptors. Port Number where the communication will happen.
+    int sockfd, newsockfd; // Socket handles are also file descriptors. Port Number where the communication will happen.
     // File descriptors are used by the operating system to file information about the files.
     socklen_t clilen;
     char read_buffer[256]; // Read the socket and put characters into the buffer.
@@ -127,6 +151,7 @@ int main(int argc, char *argv[])
     // "connect" request form client is being "accpeted" by the accept() function.
     std::thread read_th(read_thread,read_buffer, &newsockfd);
     std::thread write_th(write_thread,write_buffer, &newsockfd);
+    std::thread signal_th(signal_capture, portno);
 
     // read_th.join();
     while(1){;}
