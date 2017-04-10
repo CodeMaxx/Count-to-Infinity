@@ -64,6 +64,95 @@ bool check_password(std::string password, std::string key_given, std::string sal
     return std::string(reinterpret_cast<char*>(key)) == key_given;
 }
 
+static int callback(void *NotUsed, int argc, char **argv, char **azColName)
+{
+    int i;
+    for(i=0; i<argc; i++)
+    {
+        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+   printf("\n");
+   return 0;
+}
+
+void register_func(vector<string> vec_reg,sqlite3* db, char* zErrMsg)
+{
+    vector<string>::iterator it = vec_reg.begin();
+    it++;
+
+    string t1 = "Select * from main where username = '" + *it +"'";
+    char sql[t1.size()+1];
+    memcpy(sql,t1.c_str(),t1.size()+1);
+
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    if(result == SQLITE_OK)
+    {
+       if (sqlite3_step(selectstmt) == SQLITE_ROW)
+       {
+            // RECORD FOUND
+            fprintf(stderr, "Username exists in database");
+       }
+       else
+       {
+            // NO RECORD FOUND
+            string str = "(";
+            // username
+            str = str + '"' + *it + '"' + ", ";
+            ++it;
+            //password
+            string password = *it ; 
+            pair<string,string> temp = hash_password(password);
+            string new_password = temp.first;
+            string salt = temp.second;
+            // string new_password = "madhav";
+            // string salt = "madhav";
+            str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
+            ++it;
+            //name 
+            str = str + '"' + *it + '"' + ", ";
+            ++it;
+            //lastseen
+            time_t currentTime;
+            struct tm *localTime;
+
+            time( &currentTime );                   // Get the current time
+            localTime = localtime( &currentTime );  // Convert the current time to the local time
+
+            int Day    = localTime->tm_mday;
+            int Month  = localTime->tm_mon + 1;
+            int Year   = localTime->tm_year + 1900;
+            int Hour   = localTime->tm_hour;
+            int Min    = localTime->tm_min;
+            str = str + "'" + to_string(Day) + " " + to_string(Month) + " " + to_string(Year) + " " + to_string(Hour) + " " + to_string(Min) + "'" + ", ";
+            //online
+            str = str + "0" + ");";
+
+            /* Create SQL statement */
+            string t2 = "INSERT INTO main (username,password,salt,name,last_seen,online) "  \
+                 "VALUES " + str;
+            char sql1[t2.size()+1];
+            memcpy(sql1,t2.c_str(),t2.size()+1);
+
+            /* Execute SQL statement */
+            int rc;
+            fprintf(stderr,sql1);
+            rc = sqlite3_exec(db, sql1, callback, 0, &zErrMsg);
+            fprintf(stderr, "%s\n",sql1);
+            if( rc != SQLITE_OK )
+            {
+              fprintf(stderr, "SQL error: %s\n", zErrMsg);
+              sqlite3_free(zErrMsg);
+            }
+            else
+            {
+              fprintf(stdout, "Records created successfully\n");
+            }
+       }
+    }
+    sqlite3_finalize(selectstmt);    
+}
+
 void error(const char *msg)
 {
     perror(msg);
