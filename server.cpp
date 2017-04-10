@@ -60,26 +60,49 @@ void error(const char *msg)
 
 std::vector<std::string> break_string(std::string msg)
 {
-    std::istringstream buffer_str(msg);
-    std::vector<std::string> ret{std::istream_iterator<std::string>(buffer_str),
-                                 std::istream_iterator<std::string>()};
-    return ret;
+    std::stringstream strstream(msg);
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    while(std::getline(strstream, segment, ':'))
+    {
+       seglist.push_back(segment);
+    }
+
+    return seglist;
 }
 
 void read_thread(char buffer[], int *newsockfd)
 {
     int n;
     std::string buffer_str;
+
+    sqlite3 *db;
+    char *zErrMsg = 0;
+
+    /* Open database */
+    rc = sqlite3_open("main.db", &db);
+    if(rc)
+    {
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+      return(0);
+    }
+    else
+    {
+        fprintf(stderr, "Opened database successfully\n");
+    }
+
     while(1)
     {
         bzero(buffer,256);
         n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0) error("ERROR reading from socket");
-        else {
-            buffer_str = buffer_str + buffer;
-            std::cout << buffer_str.size() << std::endl;
-            std::cout << buffer_str << std::endl;
-        }    
+
+        if(strncmp(buffer_str.c_str(), "/register", strlen("/register")))
+        {
+            register_func(break_string(buffer_str), rc, zErrMsg);
+        }
+
         printf("Client: %s %d\n",buffer, n);
     }
 }
