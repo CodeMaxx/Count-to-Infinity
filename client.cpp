@@ -65,28 +65,28 @@ public:
 
     void initialise_online(std::string msg)
     {
-        std::vector v = break_string(msg);
+        std::vector<std::string> v = break_string(msg);
         v.erase(v.begin());
         online.insert(online.end(), v.begin(), v.end());
     }
 
     void update_online(std::string msg)
     {
-        std::vector v = break_string(msg);
-        online.append(v[1]);
+        std::vector<std::string> v = break_string(msg);
+        online.push_back(v[1]);
     }
 
     void initialise_all(std::string msg)
     {
-        std::vector v = break_string(msg);
+        std::vector<std::string> v = break_string(msg);
         v.erase(v.begin());
         all.insert(all.end(), v.begin(), v.end());
     }
 
     void update_all(std::string msg)
     {
-        std::vector v = break_string(msg);
-        all.append(v[1]);
+        std::vector<std::string> v = break_string(msg);
+        all.push_back(v[1]);
     }
 };
 
@@ -222,7 +222,7 @@ void write_thread(char buffer[], int *newsockfd)
             	printf("Password: ");
                 getline(std::cin, password);
                 message.append(username.append(":"));
-                message.append(password.append("endOfMessage"));
+                message.append(password.append(endOfMessage));
 
             	write_helper(message, newsockfd);
             }

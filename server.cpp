@@ -76,6 +76,49 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName)
    return 0;
 }
 
+std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg)
+{
+    std::vector<std::string>::iterator it = vec_login.begin();
+    it++;
+
+    std::string username = *it;
+
+    std::string t1 = "Select password,salt,name from main where username = '" + *it +"'";
+    char sql[t1.size()+1];
+    memcpy(sql,t1.c_str(),t1.size()+1);
+
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    if(result == SQLITE_OK)
+    {
+       if (sqlite3_step(selectstmt) == SQLITE_ROW)
+       {
+            // RECORD FOUND
+            std::string password_table = (char*)sqlite3_column_text(selectstmt, 0);
+            std::string salt_table = (char*)sqlite3_column_text(selectstmt, 1);
+            std::string name_table = (char*)sqlite3_column_text(selectstmt, 2);
+            std::cout << "Name : " << name_table << " " << password_table << " " << salt_table << std::endl;
+            it++;
+            std::string password_input = *it;
+            bool temp_bool = check_password(password_input,password_table,salt_table);
+            if(temp_bool)
+            {
+                return "/login:"+username+":"+name_table+"#"; 
+            }
+            else
+            {
+                fprintf(stderr, "Invalid password");
+            }
+       }
+       else
+       {
+            // NO RECORD FOUND
+            fprintf(stderr, "Invalid Username");
+       }
+    }
+    sqlite3_finalize(selectstmt); 
+}
+
 void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 {
     std::vector<std::string>::iterator it = vec_reg.begin();
@@ -242,9 +285,21 @@ void read_thread(char buffer[], int *newsockfd)
             std::cout << y << std::endl;
         }
 
+
+
         if(!strncmp(buffer_str.c_str(), "/register", strlen("/register")))
         {
             register_func(break_string(buffer_str), db, zErrMsg);
+        }
+        else if(!strncmp(buffer_str.c_str(), "/login", strlen("/login")))
+        {
+            std::cout << "Asd" << std::endl;
+            // std::vector<std::string> vec_login;
+            // vec_login.push_back("/login");
+            // vec_login.push_back("harshithg");
+            // vec_login.push_back("whatthehell");
+            std::string ans = login_func(break_string(buffer_str),db,zErrMsg);
+            fprintf(stderr, "%s\n", ans);
         }
 
         printf("Client: %s %d\n",buffer_str, n);
