@@ -71,7 +71,7 @@ void write_thread(char buffer[], int *newsockfd)
             if(command.substr(0, strlen("/help")).compare("/help") == 0)
             {
                 printf("/help - To get help\n");
-                printf("/register [username] - To start registration process\n");
+                printf("/register [username] [Name] [Password] - To start registration process\n");
                 printf("/login [username] [password]\n");
                 printf("/chat [Friend's Username] - To chat with a friend\n");
                 printf("/showall - Show all registered users\n");
