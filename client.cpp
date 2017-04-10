@@ -222,7 +222,7 @@ void write_thread(char buffer[], int *newsockfd)
             	printf("Password: ");
                 getline(std::cin, password);
                 message.append(username.append(":"));
-                message.append(password.append("endOfMessage"));
+                message.append(password.append(endOfMessage));
 
             	write_helper(message, newsockfd);
             }
