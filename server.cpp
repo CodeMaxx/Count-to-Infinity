@@ -12,6 +12,45 @@
 #include <netinet/in.h>
 #include <thread>
 #include <vector>
+#include <sodium.h>
+
+#define KEY_LEN crypto_box_SEEDBYTES
+
+pair<std::string, std::string> hash_password(std::string password) {
+    const char* PASSWORD = password.c_str();
+    unsigned char salt[crypto_pwhash_SALTBYTES];
+    unsigned char key[KEY_LEN];
+
+    // random salt generate
+    randombytes_buf(salt, sizeof salt);
+
+    if (crypto_pwhash (key, sizeof key, PASSWORD, strlen(PASSWORD), salt,
+         crypto_pwhash_OPSLIMIT_INTERACTIVE, crypto_pwhash_MEMLIMIT_INTERACTIVE,
+         crypto_pwhash_ALG_DEFAULT) != 0) {
+        /* out of memory */
+    }
+
+    pair<std::string, std::string> p;
+    p.first = (reinterpret_cast<char*>(key));
+    p.second = (reinterpret_cast<char*>(salt));
+    return p;
+} 
+
+bool check_password(std::string password, std::string key_given, std::string salt_given) {
+    const char* PASSWORD = password.c_str();
+    unsigned char salt[crypto_pwhash_SALTBYTES];
+    unsigned char key[KEY_LEN];
+
+    memcpy(salt, salt_given.c_str(), salt_given.size() + 1);
+
+    if (crypto_pwhash (key, sizeof key, PASSWORD, strlen(PASSWORD), salt,
+         crypto_pwhash_OPSLIMIT_INTERACTIVE, crypto_pwhash_MEMLIMIT_INTERACTIVE,
+         crypto_pwhash_ALG_DEFAULT) != 0) {
+        /* out of memory */
+    }
+
+    return std::string(reinterpret_cast<char*>(key)) == key_given;
+}
 
 void error(const char *msg)
 {
@@ -19,7 +58,7 @@ void error(const char *msg)
     exit(1);
 }
 
-std::vector<std::string> break_string(string msg)
+std::vector<std::string> break_string(std::string msg)
 {
     std::istringstream buffer_str(msg);
     std::vector<std::string> ret{std::istream_iterator<std::string>(buffer_str),
@@ -30,12 +69,17 @@ std::vector<std::string> break_string(string msg)
 void read_thread(char buffer[], int *newsockfd)
 {
     int n;
+    std::string buffer_str;
     while(1)
     {
         bzero(buffer,256);
         n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0) error("ERROR reading from socket");
-        string buffer_str;
+        else {
+            buffer_str = buffer_str + buffer;
+            std::cout << buffer_str.size() << std::endl;
+            std::cout << buffer_str << std::endl;
+        }    
         printf("Client: %s %d\n",buffer, n);
     }
 }
@@ -55,6 +99,10 @@ void write_thread(char buffer[], int *newsockfd)
 
 int main(int argc, char *argv[])
 {
+    if(sodium_init() == -1 ) { // Hashing library initialization
+        return 1;
+    }
+
     int sockfd, newsockfd, portno; // Socket handles are also file descriptors. Port Number where the communication will happen.
     // File descriptors are used by the operating system to file information about the files.
     socklen_t clilen;
