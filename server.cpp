@@ -1,5 +1,12 @@
 /* A simple server in the internet domain using TCP
    The port number is passed as an argument */
+
+
+/*******************************************/
+/////// USE std:: WHEREVER REQUIRED /////////
+/*******************************************/
+
+
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,12 +19,17 @@
 #include <netinet/in.h>
 #include <thread>
 #include <vector>
+#include <signal.h>
+#include <sqlite3.h>
+#include <sstream>
 #include <sodium.h>
 #include <sstream>
 
 #define KEY_LEN crypto_box_SEEDBYTES
 
-pair<std::string, std::string> hash_password(std::string password) {
+int portno;
+
+std::pair<std::string, std::string> hash_password(std::string password) {
     const char* PASSWORD = password.c_str();
     unsigned char salt[crypto_pwhash_SALTBYTES];
     unsigned char key[KEY_LEN];
@@ -31,11 +43,11 @@ pair<std::string, std::string> hash_password(std::string password) {
         /* out of memory */
     }
 
-    pair<std::string, std::string> p;
+    std::pair<std::string, std::string> p;
     p.first = (reinterpret_cast<char*>(key));
     p.second = (reinterpret_cast<char*>(salt));
     return p;
-} 
+}
 
 bool check_password(std::string password, std::string key_given, std::string salt_given) {
     const char* PASSWORD = password.c_str();
@@ -57,6 +69,26 @@ void error(const char *msg)
 {
     perror(msg);
     exit(1);
+}
+
+void my_handler(int s)
+{
+    int optval = 1;
+    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
+    exit(0);
+}
+
+void signal_capture(int portno)
+{
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    while(1)
+    {
+        sigaction(SIGINT, &sigIntHandler, NULL);
+    }
 }
 
 std::vector<std::string> break_string(std::string msg)
@@ -83,11 +115,10 @@ void read_thread(char buffer[], int *newsockfd)
     char *zErrMsg = 0;
 
     /* Open database */
-    rc = sqlite3_open("main.db", &db);
+    int rc = sqlite3_open("main.db", &db);
     if(rc)
     {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-      return(0);
     }
     else
     {
@@ -141,7 +172,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int sockfd, newsockfd, portno; // Socket handles are also file descriptors. Port Number where the communication will happen.
+    int sockfd, newsockfd; // Socket handles are also file descriptors. Port Number where the communication will happen.
     // File descriptors are used by the operating system to file information about the files.
     socklen_t clilen;
     char read_buffer[256]; // Read the socket and put characters into the buffer.
@@ -186,6 +217,7 @@ int main(int argc, char *argv[])
     // "connect" request form client is being "accpeted" by the accept() function.
     std::thread read_th(read_thread,read_buffer, &newsockfd);
     std::thread write_th(write_thread,write_buffer, &newsockfd);
+    std::thread signal_th(signal_capture, portno);
 
     // read_th.join();
     while(1){;}

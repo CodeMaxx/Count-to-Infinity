@@ -1,3 +1,10 @@
+
+
+/*******************************************/
+/////// USE std:: WHEREVER REQUIRED /////////
+/*******************************************/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -10,11 +17,64 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <unordered_map>
+#include <signal.h> // For caputuring ctrl+c and freeing the port
+
+int portno;
+
+class chat
+{
+    struct history
+    {
+        struct message // Stores a messages and corresponding reply
+        {
+            std::string msg;
+            bool mine; // = 1 if message is mine else 0
+        };
+
+        struct frnd // History of one friend
+        {
+            std::string username;
+            std::string name;
+            vector<message> messages;
+        };
+
+        std::unordered_map<std::string, frnd> user_to_frnd; // Conver username to index for faster access of history
+    };
+
+public:
+    std::vector<std::string> online; // Vector containing username of online friends
+    std::vector<std::string> all; // Vector containing list of all friends
+    history hist; // Contains history of current session
+    std::string username; // Username of client
+    string name; // Name of client
+};
+
 
 void error(const char *msg)
 {
     perror(msg);
     exit(0);
+}
+
+void my_handler(int s)
+{
+    int optval = 1;
+    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
+    exit(0);
+}
+
+void signal_capture(int portno)
+{
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    while(1)
+    {
+        sigaction(SIGINT, &sigIntHandler, NULL);
+    }
 }
 
 void write_helper(std::string str_buffer, int* newsockfd){ // Define this
@@ -122,7 +182,7 @@ void write_thread(char buffer[], int *newsockfd)
                 message.append(username.append(":"));
                 message.append(name.append(":"));
                 message.append(password.append(endOfMessage));
-                
+
                 write_helper(message, newsockfd); // Ideally we should get a "Username already exists error here"
                                                  // but due to threads it is a problem. Maybe we should make
                                                  // threads variables public and then synchronise somehow.
@@ -173,7 +233,7 @@ void write_thread(char buffer[], int *newsockfd)
 
 int main(int argc, char *argv[])
 {
-    int sockfd, portno, n;
+    int sockfd, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
@@ -210,6 +270,7 @@ int main(int argc, char *argv[])
         error("ERROR connecting");
     std::thread read_th(read_thread,read_buffer, &sockfd);
     std::thread write_th(write_thread,write_buffer, &sockfd);
+    std::thread signal_th(signal_capture, portno);
 
     //read_th.join();
     while(1){;}
