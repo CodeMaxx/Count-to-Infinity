@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <thread>
+#include <iostream>
 
 void error(const char *msg)
 {
@@ -14,10 +15,11 @@ void error(const char *msg)
     exit(0);
 }
 
-void write_helper(string buffer, int*newsockfd); // Define this
+void write_helper(std::string buffer, int*newsockfd); // Define this
 
 void write_helper(char buffer[], int *newsockfd)
 {
+    int n;
     n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
     if (n < 0) error("ERROR writing to socket");
 }
@@ -62,7 +64,7 @@ void write_thread(char buffer[], int *newsockfd)
                                                  // but due to threads it is a problem. Maybe we should make
                                                  // threads variables public and then synchronise somehow.
                 printf("Name: ");
-                string name, password;
+                std::string name, password;
                 std::cin >> name;
                 printf("Password: ");
                 std::cin >> password;
