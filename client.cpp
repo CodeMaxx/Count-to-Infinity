@@ -22,6 +22,20 @@
 
 int portno;
 
+std::vector<std::string> break_string(std::string msg)
+{
+    std::stringstream strstream(msg);
+    std::string segment;
+    std::vector<std::string> seglist;
+
+    while(std::getline(strstream, segment, ':'))
+    {
+       seglist.push_back(segment);
+    }
+
+    return seglist;
+}
+
 class chat
 {
     struct history
@@ -49,9 +63,30 @@ public:
     std::string username; // Username of client
     std::string name; // Name of client
 
-    void initialze_online()
+    void initialise_online(std::string msg)
     {
-        ;
+        std::vector v = break_string(msg);
+        v.erase(v.begin());
+        online.insert(online.end(), v.begin(), v.end());
+    }
+
+    void update_online(std::string msg)
+    {
+        std::vector v = break_string(msg);
+        online.append(v[1]);
+    }
+
+    void initialise_all(std::string msg)
+    {
+        std::vector v = break_string(msg);
+        v.erase(v.begin());
+        all.insert(all.end(), v.begin(), v.end());
+    }
+
+    void update_all(std::string msg)
+    {
+        std::vector v = break_string(msg);
+        all.append(v[1]);
     }
 };
 
@@ -96,20 +131,6 @@ void write_helper(char buffer[], int *newsockfd)
     int n;
     n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
     if (n < 0) error("ERROR writing to socket");
-}
-
-std::vector<std::string> break_string(std::string msg)
-{
-    std::stringstream strstream(msg);
-    std::string segment;
-    std::vector<std::string> seglist;
-
-    while(std::getline(strstream, segment, ':'))
-    {
-       seglist.push_back(segment);
-    }
-
-    return seglist;
 }
 
 void read_thread(char buffer[], int *newsockfd)

@@ -81,9 +81,9 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     std::vector<std::string>::iterator it = vec_reg.begin();
     it++;
 
-    std::string t1 = "Select * from main where username = '" + *it +"'";
-    char sql[t1.size()+1];
-    memcpy(sql,t1.c_str(),t1.size()+1);
+    std::string temp1 = "Select * from main where username = '" + *it +"'";
+    char sql[temp1.size()+1];
+    memcpy(sql,temp1.c_str(),temp1.size()+1);
 
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
@@ -130,10 +130,10 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             str = str + "0" + ");";
 
             /* Create SQL statement */
-            std::string t2 = "INSERT INTO main (username,password,salt,name,last_seen,online) "  \
+            std::string temp2 = "INSERT INTO main (username,password,salt,name,last_seen,online) "  \
                  "VALUES " + str;
-            char sql1[t2.size()+1];
-            memcpy(sql1,t2.c_str(),t2.size()+1);
+            char sql1[temp2.size()+1];
+            memcpy(sql1,temp2.c_str(),temp2.size()+1);
 
             /* Execute SQL statement */
             int rc;
