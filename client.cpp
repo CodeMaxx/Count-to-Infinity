@@ -156,8 +156,9 @@ void read_thread(char buffer[], int *newsockfd)
        		else
         		buffer_str.append(buffer);
     	}
+    	buffer_str.pop_back();
     	//buffer[n-1] = '\0';
-    	//printf("Client: %s %d\n",buffer, n);
+    	std::cout<<"Client: "<<buffer_str << n << std::endl;
  	}
 }
 
