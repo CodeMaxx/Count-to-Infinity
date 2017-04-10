@@ -76,12 +76,12 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName)
    return 0;
 }
 
-void register_func(vector<string> vec_reg,sqlite3* db, char* zErrMsg)
+void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 {
-    vector<string>::iterator it = vec_reg.begin();
+    std::vector<std::string>::iterator it = vec_reg.begin();
     it++;
 
-    string t1 = "Select * from main where username = '" + *it +"'";
+    std::string t1 = "Select * from main where username = '" + *it +"'";
     char sql[t1.size()+1];
     memcpy(sql,t1.c_str(),t1.size()+1);
 
@@ -97,17 +97,17 @@ void register_func(vector<string> vec_reg,sqlite3* db, char* zErrMsg)
        else
        {
             // NO RECORD FOUND
-            string str = "(";
+            std::string str = "(";
             // username
             str = str + '"' + *it + '"' + ", ";
             ++it;
             //password
-            string password = *it ; 
-            pair<string,string> temp = hash_password(password);
-            string new_password = temp.first;
-            string salt = temp.second;
-            // string new_password = "madhav";
-            // string salt = "madhav";
+            std::string password = *it ; 
+            std::pair<std::string,std::string> temp = hash_password(password);
+            std::string new_password = temp.first;
+            std::string salt = temp.second;
+            // std::string new_password = "madhav";
+            // std::string salt = "madhav";
             str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
             ++it;
             //name 
@@ -125,12 +125,12 @@ void register_func(vector<string> vec_reg,sqlite3* db, char* zErrMsg)
             int Year   = localTime->tm_year + 1900;
             int Hour   = localTime->tm_hour;
             int Min    = localTime->tm_min;
-            str = str + "'" + to_string(Day) + " " + to_string(Month) + " " + to_string(Year) + " " + to_string(Hour) + " " + to_string(Min) + "'" + ", ";
+            str = str + "'" + std::to_string(Day) + " " + std::to_string(Month) + " " + std::to_string(Year) + " " + std::to_string(Hour) + " " + std::to_string(Min) + "'" + ", ";
             //online
             str = str + "0" + ");";
 
             /* Create SQL statement */
-            string t2 = "INSERT INTO main (username,password,salt,name,last_seen,online) "  \
+            std::string t2 = "INSERT INTO main (username,password,salt,name,last_seen,online) "  \
                  "VALUES " + str;
             char sql1[t2.size()+1];
             memcpy(sql1,t2.c_str(),t2.size()+1);
@@ -223,7 +223,8 @@ void read_thread(char buffer[], int *newsockfd)
         else
             buffer_str = buffer;
 
-
+        std::cout << buffer_str << std::endl; 
+        
         while(buffer_str.back() != endOfMessage){
             bzero(buffer, 256);
             n = read(*newsockfd, buffer, 255);
@@ -233,9 +234,11 @@ void read_thread(char buffer[], int *newsockfd)
                 buffer_str.append(buffer);
         }
 
+        std::cout << buffer_str << std::endl; 
+
         if(strncmp(buffer_str.c_str(), "/register", strlen("/register")))
         {
-            register_func(break_string(buffer_str), rc, zErrMsg);
+            register_func(break_string(buffer_str), db, zErrMsg);
         }
 
         printf("Client: %s %d\n",buffer, n);
