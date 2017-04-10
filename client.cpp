@@ -81,6 +81,8 @@ void write_thread(char buffer[], int *newsockfd)
     while(1)
     {
         bzero(buffer,256);
+        std::string endOfMessage = "#";
+        std::string dest_username;
         printf("You: ");
         std::string str_buffer;
 
@@ -104,7 +106,7 @@ void write_thread(char buffer[], int *newsockfd)
             }
             else if(command.substr(0, strlen("/register")).compare("/register") == 0)
             {
-            	std::string name, password, username, message, endOfMessage = "#";
+            	std::string name, password, username, message;
             	message = "/register:";
             	printf("Username: ");
             	getline(std::cin, username);
@@ -113,6 +115,10 @@ void write_thread(char buffer[], int *newsockfd)
                 printf("Password: ");
                 getline(std::cin, password);
 
+                while(password.find('#') != std::string::npos){
+                	printf("'#' not allowed. Enter another password.\n");
+                	getline(std::cin, password);
+                }
                 message.append(username.append(":"));
                 message.append(name.append(":"));
                 message.append(password.append(endOfMessage));
@@ -122,14 +128,44 @@ void write_thread(char buffer[], int *newsockfd)
                                                  // threads variables public and then synchronise somehow.
             }
             else if(command.substr(0, strlen("/login")).compare("/login") == 0){
-            	std::string username, password;
-            	write_helper(str_buffer, newsockfd);
+            	std::string username, password, message;
+            	message = "/login:";
+            	printf("Username: ");
+            	getline(std::cin, username);
+            	printf("Password: ");
+                getline(std::cin, password);
+                message.append(username.append(":"));
+                message.append(password.append("endOfMessage"));
+
+            	write_helper(message, newsockfd);
+            }
+            else if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
+            	printf("Friend's username: ");
+            	getline(std::cin, dest_username);
+            	// check if dest_username is valid?
+
+            }
+            else if(command.substr(0, strlen("/showall")).compare("/showall") == 0){
+            	
+            }
+            else if(command.substr(0, strlen("/showOnline")).compare("/showOnline") == 0){
+
+            }
+            else if(command.substr(0, strlen("/logout")).compare("/logout") == 0){
+            	std::string message = "/logout";
+            	message.append(endOfMessage);
+            }
+            else if(command.substr(0, strlen("/sendfile")).compare("/sendfile") == 0){
+
             }
 
         }
         else
         {
-            write_helper(str_buffer, newsockfd);
+        	std::string message = "/message:";
+        	message.append(dest_username.append(":"));
+        	message.append((str_buffer.append(endOfMessage)));
+            write_helper(message, newsockfd);
         }
     }
 }
