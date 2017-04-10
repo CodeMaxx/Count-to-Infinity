@@ -241,7 +241,7 @@ void read_thread(char buffer[], int *newsockfd)
             register_func(break_string(buffer_str), db, zErrMsg);
         }
 
-        printf("Client: %s %d\n",buffer, n);
+        printf("Client: %s %d\n",buffer_str, n);
     }
 }
 
