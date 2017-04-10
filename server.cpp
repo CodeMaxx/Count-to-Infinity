@@ -102,7 +102,7 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             str = str + '"' + *it + '"' + ", ";
             ++it;
             //password
-            std::string password = *it ; 
+            std::string password = *it ;
             std::pair<std::string,std::string> temp = hash_password(password);
             std::string new_password = temp.first;
             std::string salt = temp.second;
@@ -110,7 +110,7 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             // std::string salt = "madhav";
             str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
             ++it;
-            //name 
+            //name
             str = str + '"' + *it + '"' + ", ";
             ++it;
             //lastseen
@@ -137,7 +137,7 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 
             /* Execute SQL statement */
             int rc;
-            fprintf(stderr,sql1);
+            //fprintf(stderr,sql1);
             rc = sqlite3_exec(db, sql1, callback, 0, &zErrMsg);
             fprintf(stderr, "%s\n",sql1);
             if( rc != SQLITE_OK )
@@ -151,7 +151,7 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             }
        }
     }
-    sqlite3_finalize(selectstmt);    
+    sqlite3_finalize(selectstmt);
 }
 
 void error(const char *msg)
@@ -223,8 +223,8 @@ void read_thread(char buffer[], int *newsockfd)
         else
             buffer_str = buffer;
 
-        std::cout << buffer_str << std::endl; 
-        
+        std::cout << buffer_str << std::endl;
+
         while(buffer_str.back() != endOfMessage){
             bzero(buffer, 256);
             n = read(*newsockfd, buffer, 255);
@@ -234,7 +234,7 @@ void read_thread(char buffer[], int *newsockfd)
                 buffer_str.append(buffer);
         }
 
-        std::cout << buffer_str << std::endl; 
+        std::cout << buffer_str << std::endl;
 
         if(strncmp(buffer_str.c_str(), "/register", strlen("/register")))
         {
