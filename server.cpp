@@ -234,6 +234,8 @@ void read_thread(char buffer[], int *newsockfd)
                 buffer_str.append(buffer);
         }
 
+        buffer_str.pop_back();
+
         std::cout << buffer_str << std::endl;
 
         if(strncmp(buffer_str.c_str(), "/register", strlen("/register")))
