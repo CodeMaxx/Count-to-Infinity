@@ -15,7 +15,14 @@ void error(const char *msg)
     exit(0);
 }
 
-void write_helper(std::string buffer, int*newsockfd); // Define this
+void write_helper(std::string str_buffer, int* newsockfd){ // Define this
+	int n;
+	char *buffer = new char[str_buffer.length() + 1];
+	strcpy(buffer, str_buffer.c_str());
+	//const char* buffer = str_buffer.c_str();
+	n = write(*newsockfd, buffer, strlen(buffer)); // Writing to socket
+	if (n < 0) error("ERROR writing to socket");
+}
 
 void write_helper(char buffer[], int *newsockfd)
 {
@@ -37,6 +44,8 @@ void read_thread(char buffer[], int *newsockfd)
  }
 }
 
+//void extract_input(char buffer[])
+
 void write_thread(char buffer[], int *newsockfd)
 {
     int n;
@@ -44,10 +53,12 @@ void write_thread(char buffer[], int *newsockfd)
     {
         bzero(buffer,256);
         printf("You: ");
-        fgets(buffer,255,stdin);
-        if(buffer[0] == '/')
+        std::string str_buffer;
+        //fgets(buffer,255,stdin);
+        getline (std::cin, str_buffer);
+        if(str_buffer[0] == '/')
         {
-            if(strcmp(buffer, "/help"))
+            if(str_buffer.compare("/help") == 0)
             {
                 printf("/help - To get help\n");
                 printf("/register [username] - To start registration process\n");
@@ -58,9 +69,9 @@ void write_thread(char buffer[], int *newsockfd)
                 printf("/logout - To logout and quit\n");
                 printf("/sendfile - To send file to friend\n");
             }
-            else if(strncmp(buffer, "/register", strlen("/register")))
+            else if(str_buffer.compare("/register") == 0)
             {
-                write_helper(buffer, newsockfd); // Ideally we should get a "Username already exists error here"
+                write_helper(str_buffer, newsockfd); // Ideally we should get a "Username already exists error here"
                                                  // but due to threads it is a problem. Maybe we should make
                                                  // threads variables public and then synchronise somehow.
                 printf("Name: ");
@@ -72,7 +83,7 @@ void write_thread(char buffer[], int *newsockfd)
         }
         else
         {
-            write_helper(buffer, newsockfd);
+            write_helper(str_buffer, newsockfd);
         }
     }
 }
