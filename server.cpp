@@ -101,6 +101,10 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             // username
             str = str + '"' + *it + '"' + ", ";
             ++it;
+            //name 
+            str = str + '"' + *it + '"' + ", ";
+            ++it;
+            //lastseen
             //password
             std::string password = *it ; 
             std::pair<std::string,std::string> temp = hash_password(password);
@@ -110,10 +114,6 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             // std::string salt = "madhav";
             str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
             ++it;
-            //name 
-            str = str + '"' + *it + '"' + ", ";
-            ++it;
-            //lastseen
             time_t currentTime;
             struct tm *localTime;
 
@@ -190,7 +190,6 @@ std::vector<std::string> break_string(std::string msg)
     {
        seglist.push_back(segment);
     }
-
     return seglist;
 }
 
@@ -224,7 +223,7 @@ void read_thread(char buffer[], int *newsockfd)
             buffer_str = buffer;
 
         std::cout << buffer_str << std::endl; 
-        
+
         while(buffer_str.back() != endOfMessage){
             bzero(buffer, 256);
             n = read(*newsockfd, buffer, 255);
@@ -234,9 +233,13 @@ void read_thread(char buffer[], int *newsockfd)
                 buffer_str.append(buffer);
         }
 
-        std::cout << buffer_str << std::endl; 
+        std::cout << buffer_str.erase(buffer_str.size() - 1, 1) << std::endl; 
 
-        if(strncmp(buffer_str.c_str(), "/register", strlen("/register")))
+        auto x = break_string(buffer_str);
+        for(auto y : x) {
+            std::cout << y << std::endl;
+        }
+        if(!strncmp(buffer_str.c_str(), "/register", strlen("/register")))
         {
             register_func(break_string(buffer_str), db, zErrMsg);
         }
