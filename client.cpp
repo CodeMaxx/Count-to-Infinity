@@ -36,7 +36,7 @@ class chat
         {
             std::string username;
             std::string name;
-            vector<message> messages;
+            std::vector<message> messages;
         };
 
         std::unordered_map<std::string, frnd> user_to_frnd; // Conver username to index for faster access of history
@@ -47,7 +47,12 @@ public:
     std::vector<std::string> all; // Vector containing list of all friends
     history hist; // Contains history of current session
     std::string username; // Username of client
-    string name; // Name of client
+    std::string name; // Name of client
+
+    void initialze_online()
+    {
+        ;
+    }
 };
 
 
@@ -125,10 +130,10 @@ void read_thread(char buffer[], int *newsockfd)
     	while(buffer_str.back() != endOfMessage){
         	bzero(buffer, 256);
         	n = read(*newsockfd, buffer, 255);
-        	if (n < 0) 
+        	if (n < 0)
             	error("ERROR reading from socket");
-       		else    
-        		buffer_str.append(buffer);   
+       		else
+        		buffer_str.append(buffer);
     	}
     	//buffer[n-1] = '\0';
     	//printf("Client: %s %d\n",buffer, n);

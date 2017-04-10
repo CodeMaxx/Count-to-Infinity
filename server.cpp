@@ -107,7 +107,7 @@ std::vector<std::string> break_string(std::string msg)
 
 void read_thread(char buffer[], int *newsockfd)
 {
-    std::string endOfMessage = "#";
+    char endOfMessage = '#';
     int n;
     std::string buffer_str;
 
@@ -129,19 +129,19 @@ void read_thread(char buffer[], int *newsockfd)
     {
         bzero(buffer,256);
         n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
-        if (n < 0) 
+        if (n < 0)
             error("ERROR reading from socket");
         else
-            buffer_str(buffer);
+            buffer_str = buffer;
 
 
         while(buffer_str.back() != endOfMessage){
             bzero(buffer, 256);
             n = read(*newsockfd, buffer, 255);
-            if (n < 0) 
+            if (n < 0)
                 error("ERROR reading from socket");
-            else    
-                buffer_str.append(buffer);   
+            else
+                buffer_str.append(buffer);
         }
 
         if(strncmp(buffer_str.c_str(), "/register", strlen("/register")))
