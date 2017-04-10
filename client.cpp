@@ -45,7 +45,12 @@ void read_thread(char buffer[], int *newsockfd)
  }
 }
 
-//void extract_input(char buffer[])
+/*void extract_input(std::string buffer){
+	std::vector<std::string> strings;
+
+
+
+}*/
 
 void write_thread(char buffer[], int *newsockfd)
 {
@@ -55,11 +60,15 @@ void write_thread(char buffer[], int *newsockfd)
         bzero(buffer,256);
         printf("You: ");
         std::string str_buffer;
+
         //fgets(buffer,255,stdin);
         getline (std::cin, str_buffer);
         if(str_buffer[0] == '/')
         {
-            if(str_buffer.compare("/help") == 0)
+        	std::string command = str_buffer;
+            //std::string reg = "/register";
+            //std::string login = "/login";
+            if(command.substr(0, strlen("/help")).compare("/help") == 0)
             {
                 printf("/help - To get help\n");
                 printf("/register [username] [Name] [Password] - To start registration process\n");
@@ -70,12 +79,30 @@ void write_thread(char buffer[], int *newsockfd)
                 printf("/logout - To logout and quit\n");
                 printf("/sendfile - To send file to friend\n");
             }
-            else if(str_buffer.compare("/register") == 0)
+            else if(command.substr(0, strlen("/register")).compare("/register") == 0)
             {
-                write_helper(str_buffer, newsockfd); // Ideally we should get a "Username already exists error here"
+            	std::string name, password, username, message, endOfMessage = "#";
+            	message = "/register:";
+            	printf("Username: ");
+            	getline(std::cin, username);
+                printf("Name: ");
+                getline(std::cin, name);
+                printf("Password: ");
+                getline(std::cin, password);
+
+                message.append(username.append(":"));
+                message.append(name.append(":"));
+                message.append(password.append(endOfMessage));
+                
+                write_helper(message, newsockfd); // Ideally we should get a "Username already exists error here"
                                                  // but due to threads it is a problem. Maybe we should make
                                                  // threads variables public and then synchronise somehow.
             }
+            else if(command.substr(0, strlen("/login")).compare("/login") == 0){
+            	std::string username, password;
+            	write_helper(str_buffer, newsockfd);
+            }
+
         }
         else
         {
