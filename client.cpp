@@ -21,6 +21,7 @@
 #include <signal.h> // For caputuring ctrl+c and freeing the port
 
 int portno;
+bool loggedin;
 
 std::vector<std::string> break_string(std::string msg)
 {
@@ -162,6 +163,17 @@ void read_thread(char buffer[], int *newsockfd)
  	}
 }
 
+void print_help() {
+    printf("/help - To get help\n");
+    printf("/register [username] [Name] [Password] - To start registration process\n");
+    printf("/login [username] [password]\n");
+    printf("/chat [Friend's Username] - To chat with a friend\n");
+    printf("/showall - Show all registered users\n");
+    printf("/showOnline - Show all online users\n");
+    printf("/logout - To logout and quit\n");
+    printf("/sendfile - To send file to friend\n");
+}
+
 void write_thread(char buffer[], int *newsockfd)
 {
     int n;
@@ -182,14 +194,7 @@ void write_thread(char buffer[], int *newsockfd)
             //std::string login = "/login";
             if(command.substr(0, strlen("/help")).compare("/help") == 0)
             {
-                printf("/help - To get help\n");
-                printf("/register [username] [Name] [Password] - To start registration process\n");
-                printf("/login [username] [password]\n");
-                printf("/chat [Friend's Username] - To chat with a friend\n");
-                printf("/showall - Show all registered users\n");
-                printf("/showOnline - Show all online users\n");
-                printf("/logout - To logout and quit\n");
-                printf("/sendfile - To send file to friend\n");
+                print_help();
             }
             else if(command.substr(0, strlen("/register")).compare("/register") == 0)
             {
@@ -247,12 +252,16 @@ void write_thread(char buffer[], int *newsockfd)
             }
 
         }
-        else
+        else if(loggedin)
         {
         	std::string message = "/message:";
         	message.append(dest_username.append(":"));
         	message.append((str_buffer.append(endOfMessage)));
             write_helper(message, newsockfd);
+        }
+        else 
+        {
+            print_help();
         }
     }
 }
@@ -260,6 +269,7 @@ void write_thread(char buffer[], int *newsockfd)
 
 int main(int argc, char *argv[])
 {
+    loggedin = false;
     int sockfd, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
