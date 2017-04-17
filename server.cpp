@@ -66,7 +66,7 @@ bool check_password(std::string password, std::string key_given, std::string sal
     unsigned char salt[crypto_pwhash_SALTBYTES];
     unsigned char key[KEY_LEN];
 
-    printf("%d\n", salt_given.size());
+    printf("%lu\n", salt_given.size());
 
     memcpy(salt, salt_given.c_str(), salt_given.size() + 1);
 
@@ -132,7 +132,9 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
             fprintf(stderr, "Invalid Username\n");
        }
     }
-    sqlite3_finalize(selectstmt); 
+    sqlite3_finalize(selectstmt);
+
+    return NULL;
 }
 
 void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
