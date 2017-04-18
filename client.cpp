@@ -23,19 +23,32 @@
 int portno;
 bool loggedin;
 
+char escape_char = '\\';
+
+
 std::vector<std::string> break_string(std::string msg)
 {
     std::stringstream strstream(msg);
     std::string segment;
     std::vector<std::string> seglist;
 
+    std::string buffer;
+
     while(std::getline(strstream, segment, ':'))
     {
-       seglist.push_back(segment);
+        buffer += segment;
+        if(segment.back() == escape_char){
+            buffer.erase(buffer.size() - 1, 1);
+        }
+        else {
+            seglist.push_back(buffer);
+            buffer = "";
+        }
     }
 
     return seglist;
 }
+
 
 class chat
 {

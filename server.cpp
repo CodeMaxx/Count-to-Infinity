@@ -28,6 +28,7 @@
 #define KEY_LEN crypto_box_SEEDBYTES
 
 int portno;
+char escape_char = '\\';
 
 void print_string_as_int(std::string s){
     for(auto x : s) {
@@ -134,7 +135,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
     }
     sqlite3_finalize(selectstmt);
 
-    return NULL;
+    return "";
 }
 
 void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
@@ -242,21 +243,38 @@ void signal_capture(int portno)
     }
 }
 
+std::string clean_data(std::string msg) {
+    for(int i = 0; i != msg.size(); i++) {
+
+    }
+}
+
 std::vector<std::string> break_string(std::string msg)
 {
     std::stringstream strstream(msg);
     std::string segment;
     std::vector<std::string> seglist;
 
+    std::string buffer;
+
     while(std::getline(strstream, segment, ':'))
     {
-       seglist.push_back(segment);
+        buffer += segment;
+        if(segment.back() == escape_char){
+            buffer.erase(buffer.size() - 1, 1);
+        }
+        else {
+            seglist.push_back(buffer);
+            buffer = "";
+        }
     }
+
     return seglist;
 }
 
-void read_thread(char buffer[], int *newsockfd)
+void read_thread(int newsockfd)
 {
+    char buffer[256];
     char endOfMessage = '#';
     int n;
     std::string buffer_str;
@@ -278,7 +296,7 @@ void read_thread(char buffer[], int *newsockfd)
     while(1)
     {
         bzero(buffer,256);
-        n = read(*newsockfd,buffer,255); // Putting data from socket to buffer
+        n = read(newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0)
             error("ERROR reading from socket");
         else
@@ -289,7 +307,7 @@ void read_thread(char buffer[], int *newsockfd)
 
         while(buffer_str.back() != endOfMessage){
             bzero(buffer, 256);
-            n = read(*newsockfd, buffer, 255);
+            n = read(newsockfd, buffer, 255);
             if (n < 0)
                 error("ERROR reading from socket");
             else
@@ -313,10 +331,14 @@ void read_thread(char buffer[], int *newsockfd)
         else if(!strncmp(buffer_str.c_str(), "/login", strlen("/login")))
         {
             std::string ans = login_func(break_string(buffer_str),db,zErrMsg);
-            if(ans[0] == '#') 
-            {
+            if(ans != "") {
+                // send online data and people registered here
 
-            } 
+            }
+            else {
+                // tell client wrong pass
+                
+            }
             fprintf(stderr, "%s\n", ans.c_str());
 
         }
@@ -325,15 +347,16 @@ void read_thread(char buffer[], int *newsockfd)
     }
 }
 
-void write_thread(char buffer[], int *newsockfd)
+void write_thread(int newsockfd)
 {
     int n;
+    char buffer[256];
     while(1)
     {
         bzero(buffer,256);
         printf("You: ");
         fgets(buffer,255,stdin);
-        n = write(*newsockfd,buffer,strlen(buffer)); // Writing to socket
+        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
         if (n < 0) error("ERROR writing to socket");
     }
 }
@@ -347,8 +370,6 @@ int main(int argc, char *argv[])
     int sockfd, newsockfd; // Socket handles are also file descriptors. Port Number where the communication will happen.
     // File descriptors are used by the operating system to file information about the files.
     socklen_t clilen;
-    char read_buffer[256]; // Read the socket and put characters into the buffer.
-    char write_buffer[256];
     struct sockaddr_in serv_addr, cli_addr; // in stands for internet family addresses.
     int n;
     if (argc < 2) {
@@ -375,24 +396,26 @@ int main(int argc, char *argv[])
     // We have not started listening yet. We are just saying it is a listening type of port.
     // 5 waiting for handshakes. After newsockfd is created we can just use multiple threads.
     clilen = sizeof(cli_addr);
-    newsockfd = accept(sockfd,
-                (struct sockaddr *) &cli_addr,
-                &clilen); // Now we start listening on the port. This method will also set the client address structure.
-    // newsockfd is the real file descriptor of the whole connection.
-    // sockfd is a descriptor for half socket. It has no information about the client addrss
-    // sockets are also files. You read and write into them.
-    // Note that clilen is also being sent by reference.
-    // Note cli_addr is also being type casted here. Maybe for a different family of addresses which might be added later.
+    // std::thread signal_th(signal_capture, portno);
 
-    if (newsockfd < 0)
-        error("ERROR on accept");
-    // "connect" request form client is being "accpeted" by the accept() function.
-    std::thread read_th(read_thread,read_buffer, &newsockfd);
-    std::thread write_th(write_thread,write_buffer, &newsockfd);
-    std::thread signal_th(signal_capture, portno);
+    std::vector<std::thread> threads; 
+    while(1){
+        newsockfd = accept(sockfd,
+                    (struct sockaddr *) &cli_addr,
+                    &clilen); // Now we start listening on the port. This method will also set the client address structure.
+        // newsockfd is the real file descriptor of the whole connection.
+        // sockfd is a descriptor for half socket. It has no information about the client addrss
+        // sockets are also files. You read and write into them.
+        // Note that clilen is also being sent by reference.
+        // Note cli_addr is also being type casted here. Maybe for a different family of addresses which might be added later.
 
-    // read_th.join();
-    while(1){;}
+        if (newsockfd < 0)
+            error("ERROR on accept");
+        // "connect" request form client is being "accpeted" by the accept() function.
+        threads.push_back(std::thread(read_thread, newsockfd));
+        threads.push_back(std::thread(write_thread, newsockfd));
+    }
+    printf("what?\n");
     close(newsockfd);
     close(sockfd);
     return 0;
