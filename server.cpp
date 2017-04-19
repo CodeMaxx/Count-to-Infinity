@@ -37,12 +37,67 @@ void print_string_as_int(std::string s){
     printf("\n");
 }
 
+std::string escape_special_chars(std::string msg) {
+    for(int i = 0; i != msg.size(); i++) {
+        if(msg[i] == ':' or msg[i] == '#' or msg[i] == '~' or msg[i] == '\\') {
+            msg.insert(i, "\\");
+            i++;
+        }
+    }
+    return msg;
+}
 
 void print_string_as_int(char *s, int len){
     for(int i = 0; i != len; i++) {
         printf("%d ", int(s[i]));
     }
     printf("\n");
+}
+
+std::string vector2string(std::vector<std::string> v) { // converts vector of strings to a string that 
+    std::string ret = "/";                              // fits our protocol
+    for (std::string str : v) {
+        ret += escape_special_chars(str) + ':';
+    }
+    ret.pop_back();
+    ret.push_back('#');
+    return ret;
+}
+
+std::vector<std::string> string2vector(std::string msg) {   // converts string of our protocol to a vector of strings
+    if(msg[0] == '/') {                                     // for easy access 
+        msg.erase(0, 1);
+    }
+    if(msg.back() == '#') {
+        msg.erase(msg.size() - 1, 1);
+    }
+
+    for(int i = 0; i != msg.size(); i++) {
+        if(msg[i] == '\\') {
+            if(msg[i + 1] == '#' or msg[i + 1] == '~' or msg[i + 1] == '\\') {
+                msg.erase(i, 1);
+                i++;
+            }
+        }
+    }
+
+    std::stringstream strstream(msg);
+    std::string segment;
+    std::vector<std::string> seglist;
+    std::string buffer;
+    while(std::getline(strstream, segment, ':'))
+    {
+        buffer += segment;
+        if(segment.back() == escape_char){
+            buffer.erase(buffer.size() - 1, 1);
+        }
+        else {
+            seglist.push_back(buffer);
+            buffer = "";
+        }
+    }
+
+    return seglist;
 }
 
 std::pair<std::string, std::string> hash_password(std::string password) {
@@ -118,7 +173,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
             bool temp_bool = check_password(password_input, password_table, salt_table);
             if(temp_bool)
             {
-                std::string ret = "/login:"+username+":"+name_table+"#";
+                std::string ret = vector2string(std::vector<std::string>({"login", username, name_table}));
                 printf("%s\n", ret.c_str());
                 return ret; 
             }
@@ -243,35 +298,6 @@ void signal_capture(int portno)
     }
 }
 
-std::string clean_data(std::string msg) {
-    for(int i = 0; i != msg.size(); i++) {
-
-    }
-}
-
-std::vector<std::string> break_string(std::string msg)
-{
-    std::stringstream strstream(msg);
-    std::string segment;
-    std::vector<std::string> seglist;
-
-    std::string buffer;
-
-    while(std::getline(strstream, segment, ':'))
-    {
-        buffer += segment;
-        if(segment.back() == escape_char){
-            buffer.erase(buffer.size() - 1, 1);
-        }
-        else {
-            seglist.push_back(buffer);
-            buffer = "";
-        }
-    }
-
-    return seglist;
-}
-
 void read_thread(int newsockfd)
 {
     char buffer[256];
@@ -304,33 +330,46 @@ void read_thread(int newsockfd)
 
         std::cout << buffer_str << std::endl; 
 
+        int find_pos = 0;
+        bool endOfMessageFound = 0;
+        do{
+            int pos = buffer_str.find(endOfMessage, find_pos);
+            if(pos != std::string::npos) {
+                if(buffer_str[pos - 1] == '\\') {
+                    find_pos = pos + 1;
+                }
+                else {
+                    endOfMessageFound = 1;
+                    find_pos = pos + 1;
+                }
+            }
+            else {
+                bzero(buffer, 256);
+                n = read(newsockfd, buffer, 255);
+                if (n < 0)
+                    error("ERROR reading from socket");
+                else
+                    buffer_str.append(buffer);
+            }
+        } while(!endOfMessageFound);
 
-        while(buffer_str.back() != endOfMessage){
-            bzero(buffer, 256);
-            n = read(newsockfd, buffer, 255);
-            if (n < 0)
-                error("ERROR reading from socket");
-            else
-                buffer_str.append(buffer);
+        std::string message = buffer_str.substr(0, find_pos);
+        buffer_str.erase(0, find_pos);
+
+
+        std::vector<std::string> messageVector = string2vector(message);
+        for(auto x : messageVector) {
+            std::cout << x << std::endl;
         }
 
-        buffer_str.pop_back();
-
-        auto x = break_string(buffer_str);
-        for(auto y : x) {
-            std::cout << y << std::endl;
-        }
-
-
-
-        if(!strncmp(buffer_str.c_str(), "/register", strlen("/register")))
+        if(messageVector[0] == "register") 
         {
             printf("%s\n", buffer_str.c_str());
-            register_func(break_string(buffer_str), db, zErrMsg);
+            register_func(messageVector, db, zErrMsg);
         }
-        else if(!strncmp(buffer_str.c_str(), "/login", strlen("/login")))
+        else if(messageVector[0] == "login")
         {
-            std::string ans = login_func(break_string(buffer_str),db,zErrMsg);
+            std::string ans = login_func(messageVector, db, zErrMsg);
             if(ans != "") {
                 // send online data and people registered here
 
@@ -398,7 +437,7 @@ int main(int argc, char *argv[])
     clilen = sizeof(cli_addr);
     // std::thread signal_th(signal_capture, portno);
 
-    std::vector<std::thread> threads; 
+    std::vector<std::thread> threads;
     while(1){
         newsockfd = accept(sockfd,
                     (struct sockaddr *) &cli_addr,
@@ -415,7 +454,6 @@ int main(int argc, char *argv[])
         threads.push_back(std::thread(read_thread, newsockfd));
         threads.push_back(std::thread(write_thread, newsockfd));
     }
-    printf("what?\n");
     close(newsockfd);
     close(sockfd);
     return 0;
