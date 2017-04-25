@@ -42,9 +42,9 @@ public:
     history hist; // Contains history of current session
     std::string username; // Username of client
     std::string name; // Name of client
-    int portno; // Port Number of the server
-    bool loggedin; // Is client logged in?
-    int sockfd; //  The socket over which connection is running
+    static int portno; // Port Number of the server
+    static bool loggedin; // Is client logged in?
+    static int sockfd; //  The socket over which connection is running
 
     static const char escape_char = '\\'; // Escape character for escaping separators in client messages
 
@@ -56,15 +56,15 @@ public:
     void connect_to_server(char* server_name, int port_num);
     void start_chat();
 
-    void write_thread();
+    static void write_thread();
 
-    void write_helper(char buffer[]);
-    void write_helper(std::string str_buffer);
+    static void write_helper(char buffer[]);
+    static void write_helper(std::string str_buffer);
 
-    void read_thread();
+    static void read_thread();
 
-    void free_port(int s);
-    void signal_capture();
+    static void free_port(int s);
+    static void signal_capture();
 
     // Helper functions
     static void error(const char *msg);
