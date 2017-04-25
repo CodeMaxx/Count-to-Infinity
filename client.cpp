@@ -1,12 +1,15 @@
 #include "client.h"
 #include "utils.cpp"
 
-void chat::initialise_online(std::string msg) {
-    std::vector <std::string> v = string2vector(msg);
-    v.erase(v.begin());
+int chat::portno = 9399;
+bool chat::loggedin = false;
+int chat::sockfd = 0;
+
+void chat::initialise_online(std::vector<std::string> msg) {
+    msg.erase(msg.begin());
     identity id;
 
-    for (auto i = v.begin(); i != v.end(); i++) {
+    for (auto i = msg.begin(); i != msg.end(); i++) {
         id.username = *i;
         i++;
         id.name = *i;
@@ -14,22 +17,21 @@ void chat::initialise_online(std::string msg) {
     }
 }
 
-void chat::update_online(std::string msg) // Update vector containing which people are online
+void chat::update_online(std::vector<std::string> msg) // Update vector containing which people are online
 {
-    std::vector<std::string> v = string2vector(msg);
     identity id;
-    id.username = v[1];
-    id.name = v[2];
+    id.username = msg[1];
+    id.name = msg[2];
     online.push_back(id);
 }
 
-void chat::initialise_all(std::string msg) // Intialise the all vector when first connection is made
+void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vector when first connection is made
 {
     std::vector<std::string> v = string2vector(msg);
-    v.erase(v.begin());
+    msg.erase(msg.begin());
     identity id;
 
-    for (auto i = v.begin(); i != v.end(); i++) {
+    for (auto i = msg.begin(); i != msg.end(); i++) {
         id.username = *i;
         i++;
         id.name = *i;
@@ -37,12 +39,11 @@ void chat::initialise_all(std::string msg) // Intialise the all vector when firs
     }
 }
 
-void chat::update_all(std::string msg)
+void chat::update_all(std::vector<std::string> msg)
 {
-    std::vector<std::string> v = string2vector(msg);
     identity id;
-    id.username = v[1];
-    id.name = v[2];
+    id.username = msg[1];
+    id.name = msg[2];
     all.push_back(id);
 }
 
@@ -112,8 +113,20 @@ void chat::read_thread()
             else
                 buffer_str.append(buffer);
         }
-        for(auto x : string2vector(buffer_str)) {
-            std::cout << x << std::endl;
+        auto messageVector = string2vector(buffer_str);
+        if(messageVector[0] == "login") {
+            loggedin = true;
+            std::cout << "Logged in as " << messageVector[1] << std::endl; 
+        }
+        else if(messageVector[0] == "wrong") {
+            printf("Wrong username/password\n");
+        }
+        else if(messageVector[0] == "logout") {
+            printf("You have logged out\n" );
+            loggedin = false;
+        }
+        else if(messageVector[0] == "olusers") {
+
         }
     }
 }
@@ -134,16 +147,17 @@ void chat::write_thread()
     int n;
     char buffer[256];
 
+    std::string dest_username;
+
     while(1)
     {
         bzero(buffer,256);
         std::string endOfMessage = "#";
-        std::string dest_username;
         printf("You: ");
         std::string str_buffer;
 
-        //fgets(buffer,255,stdin);
         getline (std::cin, str_buffer);
+
         if(str_buffer[0] == '/')
         {
             std::string command = str_buffer;
@@ -177,35 +191,37 @@ void chat::write_thread()
                 // threads variables public and then synchronise somehow.
             }
             else if(command.substr(0, strlen("/login")).compare("/login") == 0){
-                std::string username, password, message;
-                message = "/login:";
+                std::string username, password;
+                std::vector<std::string> msg;
                 printf("Username: ");
                 getline(std::cin, username);
                 printf("Password: ");
                 getline(std::cin, password);
-                message.append(username.append(":"));
-                message.append(password.append(endOfMessage));
+                msg.push_back("login");
+                msg.push_back(username);
+                msg.push_back(password);
 
-                write_helper(message);
+                write_helper(vector2string(msg));
             }
-            else if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
-                printf("Friend's username: ");
-                getline(std::cin, dest_username);
-                // check if dest_username is valid?
-
-            }
-            else if(command.substr(0, strlen("/showall")).compare("/showall") == 0){
-
-            }
-            else if(command.substr(0, strlen("/showOnline")).compare("/showOnline") == 0){
-
-            }
-            else if(command.substr(0, strlen("/logout")).compare("/logout") == 0){
-                std::string message = "/logout";
-                message.append(endOfMessage);
-            }
-            else if(command.substr(0, strlen("/sendfile")).compare("/sendfile") == 0){
-
+            if (loggedin) {
+                if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
+                    printf("Friend's username: ");
+                    getline(std::cin, dest_username);
+                    // check if dest_username is valid?
+    
+                }
+                else if(command.substr(0, strlen("/showall")).compare("/showall") == 0){
+                    
+                }
+                else if(command.substr(0, strlen("/showOnline")).compare("/showOnline") == 0){
+    
+                }
+                else if(command.substr(0, strlen("/logout")).compare("/logout") == 0){
+                    write_helper(vector2string(std::vector<std::string>({"logout"})));
+                }
+                else if(command.substr(0, strlen("/sendfile")).compare("/sendfile") == 0){
+    
+                }
             }
 
         }
@@ -226,7 +242,7 @@ void chat::write_thread()
 void chat::connect_to_server(char *server_name, int port_num)
 {
     loggedin = false;
-    int sockfd, n;
+    int n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 

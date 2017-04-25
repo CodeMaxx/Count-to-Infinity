@@ -24,6 +24,8 @@
 #include <sstream>
 #include <sodium.h>
 #include <sstream>
+#include <unordered_map>
+
 #include "lockless_queue.cpp"
 #include "utils.cpp"
 #include "ldap.h"
@@ -31,6 +33,9 @@
 #define KEY_LEN crypto_box_SEEDBYTES
 
 int portno;
+
+std::unordered_map<std::string, int> online;
+std::unordered_map<int, std::string> rev_online;
 
 lockless_queue<std::vector<std::string>> control_thread_queue;
 
@@ -258,6 +263,43 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     sqlite3_finalize(selectstmt);
 }
 
+void set_user_online(std::string username, sqlite3* db, char* zErrMsg) {
+    std::string query = "UPDATE main " \
+                    "SET online = 1 " \
+                    "WHERE username = '" + username + "'";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+    else {
+      fprintf(stdout, "Records updated successfully\n");
+    }
+}
+
+std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
+    std::string query = "SELECT name, username FROM main WHERE online = 1";
+    std::vector<std::string> user_vector;
+    user_vector.push_back("olusers");
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        while (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            std::string name = (char *) sqlite3_column_text(selectstmt, 0);
+            std::string username = (char *) sqlite3_column_text(selectstmt, 1);
+            std::cout << "Name : " << name << std::endl;
+            std::cout << "Username : " << username << std::endl << std::endl; 
+            user_vector.push_back(username);
+            user_vector.push_back(name);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return user_vector;
+}   
+
 void read_thread(int newsockfd)
 {
     char buffer[256];
@@ -351,10 +393,14 @@ void control_thread() {
 
 
     while(true) {
+        sleep(1);
         if(!control_thread_queue.isEmpty()) { 
             auto head = control_thread_queue.consume_all();
             while(head) {
                 std::vector<std::string> messageVector = head->data;  
+                
+                int sockfd = atoi(messageVector.back().c_str());
+                messageVector.pop_back();
 
                 if(messageVector[0] == "register") 
                 {
@@ -365,16 +411,25 @@ void control_thread() {
                     std::string ans = login_func(messageVector, db, zErrMsg);
                     if(ans != "") {
                         // send online data and people registered here
-                        int sockfd = atoi(messageVector.back().c_str());
+                        
                         std::cout << sockfd << std::endl;
+                        // online[messageVector[1]] = sockfd;
+                        // rev_online[sockfd] = messageVector[1];
+                        set_user_online(messageVector[1], db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
+                        std::vector<std::string> userlist = get_online_users(db, zErrMsg);
+                        write_to_socket(sockfd,vector2string(userlist));  
                     }
                     else {
                         // tell client wrong pass
-                        
+                        std::vector<std::string> v({"wrong"});
+                        write_to_socket(sockfd, vector2string(v));
                     }
                     fprintf(stderr, "%s\n", ans.c_str());
+
+                }
+                else if(messageVector[0] == "message") {
 
                 }
 
