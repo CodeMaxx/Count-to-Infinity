@@ -25,83 +25,13 @@
 #include <sodium.h>
 #include <sstream>
 #include "lockless_queue.cpp"
+#include "utils.cpp"
 
 #define KEY_LEN crypto_box_SEEDBYTES
 
 int portno;
-char escape_char = '\\';
 
 lockless_queue<std::vector<std::string>> control_thread_queue;
-
-void print_string_as_int(std::string s){
-    for(auto x : s) {
-        printf("%d ", int(x));
-    }
-    printf("\n");
-}
-
-std::string escape_special_chars(std::string msg) {
-    for(int i = 0; i != msg.size(); i++) {
-        if(msg[i] == ':' or msg[i] == '#' or msg[i] == '~' or msg[i] == '\\') {
-            msg.insert(i, "\\");
-            i++;
-        }
-    }
-    return msg;
-}
-
-void print_string_as_int(char *s, int len){
-    for(int i = 0; i != len; i++) {
-        printf("%d ", int(s[i]));
-    }
-    printf("\n");
-}
-
-std::string vector2string(std::vector<std::string> v) { // converts vector of strings to a string that 
-    std::string ret = "/";                              // fits our protocol
-    for (std::string str : v) {
-        ret += escape_special_chars(str) + ':';
-    }
-    ret.pop_back();
-    ret.push_back('#');
-    return ret;
-}
-
-std::vector<std::string> string2vector(std::string msg) {   // converts string of our protocol to a vector of strings
-    if(msg[0] == '/') {                                     // for easy access 
-        msg.erase(0, 1);
-    }
-    if(msg.back() == '#') {
-        msg.erase(msg.size() - 1, 1);
-    }
-
-    for(int i = 0; i != msg.size(); i++) {
-        if(msg[i] == '\\') {
-            if(msg[i + 1] == '#' or msg[i + 1] == '~' or msg[i + 1] == '\\') {
-                msg.erase(i, 1);
-                i++;
-            }
-        }
-    }
-
-    std::stringstream strstream(msg);
-    std::string segment;
-    std::vector<std::string> seglist;
-    std::string buffer;
-    while(std::getline(strstream, segment, ':'))
-    {
-        buffer += segment;
-        if(segment.back() == escape_char){
-            buffer.erase(buffer.size() - 1, 1);
-        }
-        else {
-            seglist.push_back(buffer);
-            buffer = "";
-        }
-    }
-
-    return seglist;
-}
 
 std::pair<std::string, std::string> hash_password(std::string password) {
     const char* PASSWORD = password.c_str();
@@ -148,6 +78,32 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName)
     }
    printf("\n");
    return 0;
+}
+
+void error(const char *msg)
+{
+    perror(msg);
+    exit(1);
+}
+
+void my_handler(int s)
+{
+    int optval = 1;
+    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
+    exit(0);
+}
+
+void signal_capture(int portno)
+{
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    while(1)
+    {
+        sigaction(SIGINT, &sigIntHandler, NULL);
+    }
 }
 
 std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg)
@@ -275,32 +231,6 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     sqlite3_finalize(selectstmt);
 }
 
-void error(const char *msg)
-{
-    perror(msg);
-    exit(1);
-}
-
-void my_handler(int s)
-{
-    int optval = 1;
-    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
-    exit(0);
-}
-
-void signal_capture(int portno)
-{
-    struct sigaction sigIntHandler;
-
-    sigIntHandler.sa_handler = my_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-    while(1)
-    {
-        sigaction(SIGINT, &sigIntHandler, NULL);
-    }
-}
-
 void read_thread(int newsockfd)
 {
     char buffer[256];
@@ -375,20 +305,6 @@ void write_to_socket(int newsockfd, std::string data) {
         if (n < 0) error("ERROR writing to socket");
     }
 
-}
-
-void write_thread(int newsockfd)
-{
-    int n;
-    char buffer[256];
-    while(1)
-    {
-        bzero(buffer,256);
-        printf("You: ");
-        fgets(buffer,255,stdin);
-        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
-        if (n < 0) error("ERROR writing to socket");
-    }
 }
 
 void control_thread() {
@@ -496,7 +412,6 @@ int main(int argc, char *argv[])
             error("ERROR on accept");
         // "connect" request form client is being "accpeted" by the accept() function.
         threads.push_back(std::thread(read_thread, newsockfd));
-        threads.push_back(std::thread(write_thread, newsockfd));
     }
     close(newsockfd);
     close(sockfd);
