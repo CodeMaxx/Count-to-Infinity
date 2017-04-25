@@ -3,3 +3,4 @@ server
 a.out
 main.db
 .idea/*
+*.dSYM
