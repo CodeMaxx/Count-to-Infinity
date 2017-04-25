@@ -180,18 +180,53 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
     return "";
 }
 
+bool find_ldap_username(std::string username)
+{
+    LDAP *ld;
+    int  result;
+    int  auth_method    = LDAP_AUTH_SIMPLE;
+    int desired_version = LDAP_VERSION3;
+    char ldap_host[24]     = "cs252lab.cse.iitb.ac.in";
+
+
+    if ((ld = ldap_init(ldap_host, LDAP_PORT)) == NULL ) {
+        perror( "ldap_init failed" );
+        exit( EXIT_FAILURE );
+    }
+
+    if (ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &desired_version) != LDAP_OPT_SUCCESS)
+    {
+        ldap_perror(ld, "ldap_set_option failed!");
+        exit(EXIT_FAILURE);
+    }
+
+    /* search from this point */
+    char* base="dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
+
+    /* return everything */
+    std::string filter = "cn=" + username;
+
+    LDAPMessage* msg;
+
+    if (ldap_search_s(ld, base, LDAP_SCOPE_SUBTREE, filter.c_str(), NULL, 0, &msg)
+        != LDAP_SUCCESS) {
+        ldap_perror( ld, "ldap_add_s" );
+    }
+
+    if(ldap_count_entries(ld, msg))
+    {
+        return true;
+    }
+    else
+        return false;
+}
+
 bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 {
-    // Check if username is already there // Perform an LDAP search TODO
-
-//    if(find_ldap_username(vec_reg[1], vec_reg[3]))
-//    {
-//        ;
-//    }
-//    else
-//    {
-//        ;
-//    }
+    if(find_ldap_username(vec_reg[1]))
+    {
+        return false;
+    }
 
     std::string temp1 = "Select * from main where username = '" + vec_reg[1] +"'";
     char sql[temp1.size()+1];
