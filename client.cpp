@@ -45,7 +45,7 @@ std::vector<std::string> string2vector(std::string msg) {   // converts string o
     while(std::getline(strstream, segment, ':'))
     {
         buffer += segment;
-        if(segment.back() == escape_char){
+        if(segment.back() == chat::escape_char){
             buffer.erase(buffer.size() - 1, 1);
         }
         else {
