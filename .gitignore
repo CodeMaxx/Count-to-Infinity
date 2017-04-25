@@ -4,3 +4,4 @@ a.out
 main.db
 .idea/*
 *.dSYM
+test_ldap*
