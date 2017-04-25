@@ -16,6 +16,12 @@
 
 class chat
 {
+    struct identity
+    {
+        std::string username; // Username
+        std::string name; // Name
+    };
+
     struct history
     {
         struct message // Stores a messages and corresponding reply
@@ -26,8 +32,7 @@ class chat
 
         struct frnd // History of one friend
         {
-            std::string username;
-            std::string name;
+            identity id;
             std::vector<message> messages;
         };
 
@@ -37,11 +42,11 @@ class chat
     };
 
 public:
-    std::vector<std::string> online; // Vector containing username of online friends
-    std::vector<std::string> all; // Vector containing list of all friends
+    std::vector<identity> online; // Vector containing username of online friends
+    std::vector<identity> all; // Vector containing list of all friends
     history hist; // Contains history of current session
-    std::string username; // Username of client
-    std::string name; // Name of client
+    identity id; // Identity of the client
+
     static int portno; // Port Number of the server
     static bool loggedin; // Is client logged in?
     static int sockfd; //  The socket over which connection is running
@@ -69,5 +74,4 @@ public:
     // Helper functions
     static void error(const char *msg);
     static void print_help();
-    static std::vector<std::string> break_string(std::string msg);
 };

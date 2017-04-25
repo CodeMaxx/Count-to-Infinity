@@ -1,5 +1,10 @@
 #include "client.h"
 
+// Initialising static variables
+int chat::portno = 0;
+bool chat::loggedin = 0;
+int chat::sockfd = 0;
+
 std::string escape_special_chars(std::string msg) {
     for(int i = 0; i != msg.size(); i++) {
         if(msg[i] == ':' or msg[i] == '#' or msg[i] == '~' or msg[i] == '\\') {
@@ -58,30 +63,49 @@ std::vector<std::string> string2vector(std::string msg) {   // converts string o
 }
 
 
-void chat::initialise_online(std::string msg)
+void chat::initialise_online(std::string msg) {
+    std::vector <std::string> v = string2vector(msg);
+    v.erase(v.begin());
+    identity id;
+
+    for (auto i = v.begin(); i != v.end(); i++) {
+        id.username = *i;
+        i++;
+        id.name = *i;
+        online.push_back(id);
+    }
+}
+
+void chat::update_online(std::string msg) // Update vector containing which people are online
+{
+    std::vector<std::string> v = string2vector(msg);
+    identity id;
+    id.username = v[1];
+    id.name = v[2];
+    online.push_back(id);
+}
+
+void chat::initialise_all(std::string msg) // Intialise the all vector when first connection is made
 {
     std::vector<std::string> v = string2vector(msg);
     v.erase(v.begin());
-    online.insert(online.end(), v.begin(), v.end());
-}
+    identity id;
 
-void chat::update_online(std::string msg)
-{
-    std::vector<std::string> v = string2vector(msg);
-    online.push_back(v[1]);
-}
-
-void chat::initialise_all(std::string msg)
-{
-    std::vector<std::string> v = string2vector(msg);
-    v.erase(v.begin());
-    all.insert(all.end(), v.begin(), v.end());
+    for (auto i = v.begin(); i != v.end(); i++) {
+        id.username = *i;
+        i++;
+        id.name = *i;
+        online.push_back(id);
+    }
 }
 
 void chat::update_all(std::string msg)
 {
     std::vector<std::string> v = string2vector(msg);
-    all.push_back(v[1]);
+    identity id;
+    id.username = v[1];
+    id.name = v[2];
+    all.push_back(id);
 }
 
 void chat::error(const char *msg)
