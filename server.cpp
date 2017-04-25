@@ -28,7 +28,7 @@
 
 #include "lockless_queue.cpp"
 #include "utils.cpp"
-#include "ldap.h"
+#include <ldap.h>
 
 #define KEY_LEN crypto_box_SEEDBYTES
 
@@ -59,9 +59,6 @@ bool ldap_login(std::string cn, std::string pass)
         ldap_perror(ld, "ldap_set_option failed!");
         exit(EXIT_FAILURE);
     }
-
-    /* search from this point */
-    char* base="dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
 
     if (ldap_bind_s(ld, root_dn.c_str(), root_pwd.c_str(), auth_method) != LDAP_SUCCESS )
         return false;
@@ -184,12 +181,20 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
     return "";
 }
 
-void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
+bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 {
-    std::vector<std::string>::iterator it = vec_reg.begin();
-    it++;
+    // Check if username is already there // Perform an LDAP search TODO
 
-    std::string temp1 = "Select * from main where username = '" + *it +"'";
+//    if(find_ldap_username(vec_reg[1], vec_reg[3]))
+//    {
+//        ;
+//    }
+//    else
+//    {
+//        ;
+//    }
+
+    std::string temp1 = "Select * from main where username = '" + vec_reg[1] +"'";
     char sql[temp1.size()+1];
     memcpy(sql,temp1.c_str(),temp1.size()+1);
 
@@ -207,20 +212,17 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             // NO RECORD FOUND
             std::string str = "(";
             // username
-            str = str + '"' + *it + '"' + ", ";
-            ++it;
-            //name 
-            str = str + '"' + *it + '"' + ", ";
-            ++it;
+            str = str + '"' + vec_reg[1] + '"' + ", ";
+            //name
+            str = str + '"' + vec_reg[2] + '"' + ", ";
             //password
-            std::string password = *it ;
+            std::string password = vec_reg[3] ;
             std::pair<std::string,std::string> temp = hash_password(password);
             std::string new_password = temp.first;
             std::string salt = temp.second;
             // std::string new_password = "madhav";
             // std::string salt = "madhav";
             str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
-            ++it;
 
             //lastseen
             time_t currentTime;
@@ -241,13 +243,13 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             /* Create SQL statement */
             std::string temp2 = "INSERT INTO main (username,name,password,salt,last_seen,online) "  \
                  "VALUES " + str;
-            char sql1[temp2.size()+1];
-            memcpy(sql1,temp2.c_str(),temp2.size()+1);
+//            char sql1[temp2.size()+1];
+//            memcpy(sql1,temp2.c_str(),temp2.size()+1);
 
             /* Execute SQL statement */
             int rc;
             //fprintf(stderr,sql1);
-            rc = sqlite3_exec(db, sql1, callback, 0, &zErrMsg);
+            rc = sqlite3_exec(db, temp2.c_str(), callback, 0, &zErrMsg);
             fprintf(stderr, "%s\n",sql1);
             if( rc != SQLITE_OK )
             {
@@ -256,11 +258,13 @@ void register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             }
             else
             {
-              fprintf(stdout, "Records created successfully\n");
+                fprintf(stdout, "Records created successfully\n");
+                return true;
             }
        }
     }
     sqlite3_finalize(selectstmt);
+    return false;
 }
 
 void set_user_online(std::string username, sqlite3* db, char* zErrMsg) {
@@ -404,7 +408,15 @@ void control_thread() {
 
                 if(messageVector[0] == "register") 
                 {
-                    register_func(messageVector, db, zErrMsg);
+                    if(register_func(messageVector, db, zErrMsg))
+                    {
+                        std::string success = "You have been registered successfully!";
+                        write_to_socket(sockfd, success);
+                    }
+                    else
+                    {
+                        write_to_socket(sockfd, "Username already exists. Please register with a different username.");
+                    }
                 }
                 else if(messageVector[0] == "login")
                 {
