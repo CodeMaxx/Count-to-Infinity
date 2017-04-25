@@ -27,7 +27,6 @@ void chat::update_online(std::vector<std::string> msg) // Update vector containi
 
 void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vector when first connection is made
 {
-    std::vector<std::string> v = string2vector(msg);
     msg.erase(msg.begin());
     identity id;
 

@@ -25,17 +25,15 @@
 #include <sodium.h>
 #include <sstream>
 #include <unordered_map>
-
 #include "lockless_queue.cpp"
 #include "utils.cpp"
-#include "ldap.h"
+
+#define LDAP_DEPRECATED 1
+#include <ldap.h>
 
 #define KEY_LEN crypto_box_SEEDBYTES
 
 int portno;
-
-std::unordered_map<std::string, int> online;
-std::unordered_map<int, std::string> rev_online;
 
 lockless_queue<std::vector<std::string>> control_thread_queue;
 
@@ -45,10 +43,11 @@ bool ldap_login(std::string cn, std::string pass)
     int  result;
     int  auth_method    = LDAP_AUTH_SIMPLE;
     int desired_version = LDAP_VERSION3;
-    char *ldap_host     = "cs252lab.cse.iitb.ac.in";
+    char ldap_host[24]     = "cs252lab.cse.iitb.ac.in";
     std::string root_dn = "cn=" + cn + ", dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
     std::string root_pwd = pass;
 
+   
     if ((ld = ldap_init(ldap_host, LDAP_PORT)) == NULL ) {
         perror( "ldap_init failed" );
         exit( EXIT_FAILURE );
@@ -61,7 +60,6 @@ bool ldap_login(std::string cn, std::string pass)
     }
 
     /* search from this point */
-    char* base="dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
 
     if (ldap_bind_s(ld, root_dn.c_str(), root_pwd.c_str(), auth_method) != LDAP_SUCCESS )
         return false;
@@ -166,7 +164,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
             std::string salt_table = (char*)sqlite3_column_text(selectstmt, 1);
             std::string name_table = (char*)sqlite3_column_text(selectstmt, 2);
             std::string password_input = vec_login[2];
-            bool temp_bool = check_password(password_input, password_table, salt_table);
+            bool temp_bool =check_password(password_input, password_table, salt_table);
 
            if(temp_bool)
            {
@@ -413,8 +411,6 @@ void control_thread() {
                         // send online data and people registered here
                         
                         std::cout << sockfd << std::endl;
-                        // online[messageVector[1]] = sockfd;
-                        // rev_online[sockfd] = messageVector[1];
                         set_user_online(messageVector[1], db, zErrMsg);
                         write_to_socket(sockfd, ans);
 

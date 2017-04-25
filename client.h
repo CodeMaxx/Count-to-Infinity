@@ -53,10 +53,10 @@ public:
 
     static const char escape_char = '\\'; // Escape character for escaping separators in client messages
 
-    void initialise_online(std::string msg); // Initially add all people who are online
-    void update_online(std::string msg); // Add a person if he comes online
-    void initialise_all(std::string msg); // Add all people part of the network
-    void update_all(std::string msg); // Add if a new person joins the network
+    void initialise_online(std::vector<std::string> msg); // Initially add all people who are online
+    void update_online(std::vector<std::string> msg); // Add a person if he comes online
+    void initialise_all(std::vector<std::string> msg); // Add all people part of the network
+    void update_all(std::vector<std::string> msg); // Add if a new person joins the network
 
     void connect_to_server(char* server_name, int port_num);
     void start_chat();
