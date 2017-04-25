@@ -10,6 +10,13 @@ void print_string_as_int(std::string s){
     printf("\n");
 }
 
+void print_string_as_int(char *s, int len){
+    for(int i = 0; i != len; i++) {
+        printf("%d ", int(s[i]));
+    }
+    printf("\n");
+}
+
 std::string escape_special_chars(std::string msg) {
     for(int i = 0; i != msg.size(); i++) {
         if(msg[i] == ':' or msg[i] == '#' or msg[i] == '~' or msg[i] == '\\') {
@@ -20,12 +27,6 @@ std::string escape_special_chars(std::string msg) {
     return msg;
 }
 
-void print_string_as_int(char *s, int len){
-    for(int i = 0; i != len; i++) {
-        printf("%d ", int(s[i]));
-    }
-    printf("\n");
-}
 
 std::string vector2string(std::vector<std::string> v) { // converts vector of strings to a string that 
     std::string ret = "/";                              // fits our protocol
