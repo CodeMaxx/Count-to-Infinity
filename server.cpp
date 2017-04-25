@@ -34,7 +34,7 @@ int portno;
 
 lockless_queue<std::vector<std::string>> control_thread_queue;
 
-bool check_password(std::string cn, std::string pass)
+bool ldap_login(std::string cn, std::string pass)
 {
     LDAP *ld;
     int  result;
@@ -139,17 +139,19 @@ void signal_capture(int portno)
 
 std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg)
 {
-    std::vector<std::string>::iterator it = vec_login.begin();
-    it++;
+    std::string username = vec_login[1];
 
-    std::string username = *it;
+    if(ldap_login(vec_login[1], vec_login[2]))
+    {
+        return vector2string(std::vector<std::string>({"login", username, username}));
+    }
 
-    std::string t1 = "Select password,salt,name from main where username = '" + *it +"'";
-    char sql[t1.size()+1];
-    memcpy(sql,t1.c_str(),t1.size()+1);
+    std::string t1 = "Select password,salt,name from main where username = '" + username +"'";
+//    char sql[t1.size()+1];
+//     memcpy(sql,t1.c_str(),t1.size()+1);
 
     struct sqlite3_stmt *selectstmt;
-    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    int result = sqlite3_prepare_v2(db, t1.c_str(), -1, &selectstmt, NULL);
     if(result == SQLITE_OK)
     {
        if (sqlite3_step(selectstmt) == SQLITE_ROW)
@@ -158,19 +160,13 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
             std::string password_table = (char*)sqlite3_column_text(selectstmt, 0);
             std::string salt_table = (char*)sqlite3_column_text(selectstmt, 1);
             std::string name_table = (char*)sqlite3_column_text(selectstmt, 2);
-            it++;
-            std::string password_input = *it;
+            std::string password_input = vec_login[2];
             bool temp_bool = check_password(password_input, password_table, salt_table);
-            if(temp_bool)
-            {
-                std::string ret = vector2string(std::vector<std::string>({"login", username, name_table}));
-                printf("%s\n", ret.c_str());
-                return ret; 
-            }
-            else
-            {
-                fprintf(stderr, "Invalid password\n");
-            }
+
+           if(temp_bool)
+           {
+               return vector2string(std::vector<std::string>({"login", username, name_table}));
+           }
        }
        else
        {
