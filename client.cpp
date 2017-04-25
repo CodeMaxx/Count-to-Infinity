@@ -1,13 +1,47 @@
 #include "client.h"
 
-std::vector<std::string> chat::break_string(std::string msg)
-{
+std::string escape_special_chars(std::string msg) {
+    for(int i = 0; i != msg.size(); i++) {
+        if(msg[i] == ':' or msg[i] == '#' or msg[i] == '~' or msg[i] == '\\') {
+            msg.insert(i, "\\");
+            i++;
+        }
+    }
+    return msg;
+}
+
+
+std::string vector2string(std::vector<std::string> v) { // converts vector of strings to a string that
+    std::string ret = "/";                              // fits our protocol
+    for (std::string str : v) {
+        ret += escape_special_chars(str) + ':';
+    }
+    ret.pop_back();
+    ret.push_back('#');
+    return ret;
+}
+
+std::vector<std::string> string2vector(std::string msg) {   // converts string of our protocol to a vector of strings
+    if(msg[0] == '/') {                                     // for easy access
+        msg.erase(0, 1);
+    }
+    if(msg.back() == '#') {
+        msg.erase(msg.size() - 1, 1);
+    }
+
+    for(int i = 0; i != msg.size(); i++) {
+        if(msg[i] == '\\') {
+            if(msg[i + 1] == '#' or msg[i + 1] == '~' or msg[i + 1] == '\\') {
+                msg.erase(i, 1);
+                i++;
+            }
+        }
+    }
+
     std::stringstream strstream(msg);
     std::string segment;
     std::vector<std::string> seglist;
-
     std::string buffer;
-
     while(std::getline(strstream, segment, ':'))
     {
         buffer += segment;
@@ -23,29 +57,30 @@ std::vector<std::string> chat::break_string(std::string msg)
     return seglist;
 }
 
+
 void chat::initialise_online(std::string msg)
 {
-    std::vector<std::string> v = break_string(msg);
+    std::vector<std::string> v = string2vector(msg);
     v.erase(v.begin());
     online.insert(online.end(), v.begin(), v.end());
 }
 
 void chat::update_online(std::string msg)
 {
-    std::vector<std::string> v = break_string(msg);
+    std::vector<std::string> v = string2vector(msg);
     online.push_back(v[1]);
 }
 
 void chat::initialise_all(std::string msg)
 {
-    std::vector<std::string> v = break_string(msg);
+    std::vector<std::string> v = string2vector(msg);
     v.erase(v.begin());
     all.insert(all.end(), v.begin(), v.end());
 }
 
 void chat::update_all(std::string msg)
 {
-    std::vector<std::string> v = break_string(msg);
+    std::vector<std::string> v = string2vector(msg);
     all.push_back(v[1]);
 }
 
@@ -58,7 +93,6 @@ void chat::error(const char *msg)
 void chat::free_port(int s)
 {
     int optval = 1;
-    std:: cout << "balle" << std::endl;
     setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
     close(sockfd); // Closing the socket.
     exit(0);
@@ -116,9 +150,9 @@ void chat::read_thread()
             else
                 buffer_str.append(buffer);
         }
-        buffer_str.pop_back();
-        //buffer[n-1] = '\0';
-        std::cout<<"Client: "<<buffer_str << n << std::endl;
+        for(auto x : string2vector(buffer_str)) {
+            std::cout << x << std::endl;
+        }
     }
 }
 

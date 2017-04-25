@@ -347,6 +347,7 @@ void read_thread(int newsockfd)
 
 
         std::vector<std::string> messageVector = string2vector(message);
+        messageVector.push_back(std::to_string(newsockfd));
         for(auto x : messageVector) {
             std::cout << x << std::endl;
         }
@@ -354,6 +355,26 @@ void read_thread(int newsockfd)
         control_thread_queue.produce(messageVector);
 
     }
+}
+
+void write_to_socket(int newsockfd, std::string data) {
+    int n;
+    char buffer[256];
+    while(data.size() > 256)
+    {
+        strncpy(buffer, data.c_str(), 256);
+        std::cout << "Wrting to socket :" << buffer << std::endl;
+        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
+        if (n < 0) error("ERROR writing to socket");
+        else data.erase(0, 256);
+    }
+    if(data.size() > 0) {
+        strcpy(buffer, data.c_str());
+        std::cout << "Wrting to socket :" << buffer << std::endl;
+        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
+        if (n < 0) error("ERROR writing to socket");
+    }
+
 }
 
 void write_thread(int newsockfd)
@@ -401,6 +422,9 @@ void control_thread() {
                     std::string ans = login_func(messageVector, db, zErrMsg);
                     if(ans != "") {
                         // send online data and people registered here
+                        int sockfd = atoi(messageVector.back().c_str());
+                        std::cout << sockfd << std::endl;
+                        write_to_socket(sockfd, ans);
 
                     }
                     else {
