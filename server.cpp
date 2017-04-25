@@ -24,11 +24,14 @@
 #include <sstream>
 #include <sodium.h>
 #include <sstream>
+#include "lockless_queue.cpp"
 
 #define KEY_LEN crypto_box_SEEDBYTES
 
 int portno;
 char escape_char = '\\';
+
+lockless_queue<std::vector<std::string>> control_thread_queue;
 
 void print_string_as_int(std::string s){
     for(auto x : s) {
@@ -305,20 +308,6 @@ void read_thread(int newsockfd)
     int n;
     std::string buffer_str;
 
-    sqlite3 *db;
-    char *zErrMsg = 0;
-
-    /* Open database */
-    int rc = sqlite3_open("main.db", &db);
-    if(rc)
-    {
-      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-    }
-    else
-    {
-        fprintf(stderr, "Opened database successfully\n");
-    }
-
     while(1)
     {
         bzero(buffer,256);
@@ -362,27 +351,8 @@ void read_thread(int newsockfd)
             std::cout << x << std::endl;
         }
 
-        if(messageVector[0] == "register") 
-        {
-            printf("%s\n", buffer_str.c_str());
-            register_func(messageVector, db, zErrMsg);
-        }
-        else if(messageVector[0] == "login")
-        {
-            std::string ans = login_func(messageVector, db, zErrMsg);
-            if(ans != "") {
-                // send online data and people registered here
+        control_thread_queue.produce(messageVector);
 
-            }
-            else {
-                // tell client wrong pass
-                
-            }
-            fprintf(stderr, "%s\n", ans.c_str());
-
-        }
-
-        printf("Client: %s %d\n",buffer_str.c_str(), n);
     }
 }
 
@@ -397,6 +367,55 @@ void write_thread(int newsockfd)
         fgets(buffer,255,stdin);
         n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
         if (n < 0) error("ERROR writing to socket");
+    }
+}
+
+void control_thread() {
+    sqlite3 *db;
+    char *zErrMsg = 0;
+
+    /* Open database */
+    int rc = sqlite3_open("main.db", &db);
+    if(rc)
+    {
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+    }
+    else
+    {
+        fprintf(stderr, "Opened database successfully\n");
+    }
+
+
+    while(true) {
+        if(!control_thread_queue.isEmpty()) { 
+            auto head = control_thread_queue.consume_all();
+            while(head) {
+                std::vector<std::string> messageVector = head->data;  
+
+                if(messageVector[0] == "register") 
+                {
+                    register_func(messageVector, db, zErrMsg);
+                }
+                else if(messageVector[0] == "login")
+                {
+                    std::string ans = login_func(messageVector, db, zErrMsg);
+                    if(ans != "") {
+                        // send online data and people registered here
+
+                    }
+                    else {
+                        // tell client wrong pass
+                        
+                    }
+                    fprintf(stderr, "%s\n", ans.c_str());
+
+                }
+
+                auto temp = head->next;
+                delete head;
+                head = head->next;   
+            }
+        }
     }
 }
 
@@ -437,6 +456,7 @@ int main(int argc, char *argv[])
     clilen = sizeof(cli_addr);
     // std::thread signal_th(signal_capture, portno);
 
+    std::thread controlthread(control_thread);
     std::vector<std::thread> threads;
     while(1){
         newsockfd = accept(sockfd,
