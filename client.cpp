@@ -125,7 +125,10 @@ void chat::read_thread()
             loggedin = false;
         }
         else if(messageVector[0] == "olusers") {
-
+            // initialise_online(messageVector);
+        }
+        else if(messageVector[0] == "message") {
+            std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
         }
     }
 }
@@ -168,8 +171,9 @@ void chat::write_thread()
             }
             else if(command.substr(0, strlen("/register")).compare("/register") == 0)
             {
-                std::string name, password, username, message;
-                message = "/register:";
+                std::string name, password, username;
+                std::vector<std::string> message;
+                message.push_back("register");
                 printf("Username: ");
                 getline(std::cin, username);
                 printf("Name: ");
@@ -181,11 +185,11 @@ void chat::write_thread()
                     printf("'#' not allowed. Enter another password.\n");
                     getline(std::cin, password);
                 }
-                message.append(username.append(":"));
-                message.append(name.append(":"));
-                message.append(password.append(endOfMessage));
+                message.push_back(username);
+                message.push_back(name);
+                message.push_back(password);
 
-                write_helper(message); // Ideally we should get a "Username already exists error here"
+                write_helper(vector2string(message)); // Ideally we should get a "Username already exists error here"
                 // but due to threads it is a problem. Maybe we should make
                 // threads variables public and then synchronise somehow.
             }
@@ -226,10 +230,10 @@ void chat::write_thread()
         }
         else if(loggedin)
         {
-            std::string message = "/message:";
-            message.append(dest_username.append(":"));
-            message.append((str_buffer.append(endOfMessage)));
-            write_helper(message);
+            std::vector<std::string> messageVector({"message"});
+            messageVector.push_back(dest_username);
+            messageVector.push_back(str_buffer);
+            write_helper(vector2string(messageVector));
         }
         else
         {

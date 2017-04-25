@@ -242,14 +242,10 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             /* Create SQL statement */
             std::string temp2 = "INSERT INTO main (username,name,password,salt,last_seen,online) "  \
                  "VALUES " + str;
-//            char sql1[temp2.size()+1];
-//            memcpy(sql1,temp2.c_str(),temp2.size()+1);
 
             /* Execute SQL statement */
             int rc;
-            //fprintf(stderr,sql1);
             rc = sqlite3_exec(db, temp2.c_str(), callback, 0, &zErrMsg);
-            fprintf(stderr, "%s\n",sql1);
             if( rc != SQLITE_OK )
             {
               fprintf(stderr, "SQL error: %s\n", zErrMsg);
@@ -266,10 +262,72 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     return false;
 }
 
-void set_user_online(std::string username, sqlite3* db, char* zErrMsg) {
+std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
+    std::string query = "SELECT username FROM main WHERE socket = " + std::to_string(sockfd);
+
+    std::cout << "Socket ID: " << sockfd << std::endl;
+
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            std::string username = (char *) sqlite3_column_text(selectstmt, 0);
+            std::cout << "Username : " << username << std::endl; 
+            return username;
+        }
+        else {
+            std::cout << "No such Socket" << std::endl;
+        } 
+    }
+    else {
+        std::cout << "Error getting username from socket" << std::endl;
+    }
+    sqlite3_finalize(selectstmt);
+    return "";
+}
+
+int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
+    std::string query = "SELECT socket, online FROM main WHERE username = '" + username + "'";
+
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            int socket = (int) sqlite3_column_int(selectstmt, 0);
+            int online = (int) sqlite3_column_int(selectstmt, 1);
+            std::cout << "Online : " << online << std::endl; 
+            std::cout << "Socket : " << socket << std::endl << std::endl;
+            if(online) {
+                return socket;
+            } 
+        }
+        else {
+            std::cout << "No such person" << std::endl;
+        } 
+    }
+    sqlite3_finalize(selectstmt);
+    return 0;
+}
+
+void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
     std::string query = "UPDATE main " \
-                    "SET online = 1 " \
+                    "SET online = 0, socket = 0 " \
                     "WHERE username = '" + username + "'";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+    else {
+      fprintf(stdout, "Records updated successfully\n");
+    }
+}
+
+void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
+    std::string query = "UPDATE main SET online = 1, socket = " + std::to_string(sockfd) + " WHERE username = '" + username + "'";
 
     int rc;
     rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
@@ -293,7 +351,7 @@ std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
         while (sqlite3_step(selectstmt) == SQLITE_ROW) {
             std::string name = (char *) sqlite3_column_text(selectstmt, 0);
             std::string username = (char *) sqlite3_column_text(selectstmt, 1);
-            std::cout << "Name : " << name << std::endl;
+            std::cout << std::endl << "Name : " << name << std::endl;
             std::cout << "Username : " << username << std::endl << std::endl; 
             user_vector.push_back(username);
             user_vector.push_back(name);
@@ -424,7 +482,7 @@ void control_thread() {
                         // send online data and people registered here
                         
                         std::cout << sockfd << std::endl;
-                        set_user_online(messageVector[1], db, zErrMsg);
+                        set_user_online(messageVector[1], sockfd, db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
                         std::vector<std::string> userlist = get_online_users(db, zErrMsg);
@@ -439,7 +497,22 @@ void control_thread() {
 
                 }
                 else if(messageVector[0] == "message") {
-
+                    std::string source; 
+                    std::cout << "Came in message" << std::endl;
+                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        int destsockfd;
+                        if((destsockfd = get_socket(messageVector[1], db, zErrMsg)) != 0) {
+                            messageVector[1] = source;
+                            std::cout << vector2string(messageVector) << std::endl;
+                            write_to_socket(destsockfd, vector2string(messageVector));
+                        }
+                        else {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                        }
+                    }
+                    else {
+                        std::cout << "Couldn't find " << std::endl;
+                    }
                 }
 
                 auto temp = head->next;
