@@ -26,12 +26,43 @@
 #include <sstream>
 #include "lockless_queue.cpp"
 #include "utils.cpp"
+#include "ldap.h"
 
 #define KEY_LEN crypto_box_SEEDBYTES
 
 int portno;
 
 lockless_queue<std::vector<std::string>> control_thread_queue;
+
+bool check_password(std::string cn, std::string pass)
+{
+    LDAP *ld;
+    int  result;
+    int  auth_method    = LDAP_AUTH_SIMPLE;
+    int desired_version = LDAP_VERSION3;
+    char *ldap_host     = "cs252lab.cse.iitb.ac.in";
+    std::string root_dn = "cn=" + cn + ", dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
+    std::string root_pwd = pass;
+
+    if ((ld = ldap_init(ldap_host, LDAP_PORT)) == NULL ) {
+        perror( "ldap_init failed" );
+        exit( EXIT_FAILURE );
+    }
+
+    if (ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &desired_version) != LDAP_OPT_SUCCESS)
+    {
+        ldap_perror(ld, "ldap_set_option failed!");
+        exit(EXIT_FAILURE);
+    }
+
+    /* search from this point */
+    char* base="dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
+
+    if (ldap_bind_s(ld, root_dn.c_str(), root_pwd.c_str(), auth_method) != LDAP_SUCCESS )
+        return false;
+    else
+        return true;
+}
 
 std::pair<std::string, std::string> hash_password(std::string password) {
     const char* PASSWORD = password.c_str();
