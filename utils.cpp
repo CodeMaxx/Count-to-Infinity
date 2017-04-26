@@ -64,6 +64,7 @@ std::vector<std::string> string2vector(std::string msg) {   // converts string o
         buffer += segment;
         if(segment.back() == escape_char){
             buffer.erase(buffer.size() - 1, 1);
+            buffer.push_back(':');
         }
         else {
             seglist.push_back(buffer);
