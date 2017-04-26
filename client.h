@@ -44,6 +44,8 @@ class chat
 public:
     std::vector<identity> online; // Vector containing username of online friends
     std::vector<identity> all; // Vector containing list of all friends
+    std::thread read_th;
+    std::thread write_th;
     history hist; // Contains history of current session
     identity id; // Identity of the client
 
@@ -61,12 +63,12 @@ public:
     void connect_to_server(char* server_name, int port_num);
     void start_chat();
 
-    // void write_thread();
+    void write_thread();
 
     void write_helper(char buffer[]);
     void write_helper(std::string str_buffer);
 
-    // void read_thread();
+    void read_thread();
 
     void free_port(int s);
     void signal_capture();
