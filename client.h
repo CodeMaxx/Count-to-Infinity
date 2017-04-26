@@ -60,6 +60,9 @@ public:
     void initialise_all(std::vector<std::string> msg); // Add all people part of the network
     void update_all(std::vector<std::string> msg); // Add if a new person joins the network
 
+    void print_all_users();
+    void print_online_users();
+
     void connect_to_server(char* server_name, int port_num);
     void start_chat();
 

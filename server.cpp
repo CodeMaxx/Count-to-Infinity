@@ -415,6 +415,26 @@ std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
     return user_vector;
 }   
 
+std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg) {
+    std::string query = "SELECT name, username FROM main";
+    std::vector<std::string> user_vector;
+    user_vector.push_back("users");
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        while (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            std::string name = (char *) sqlite3_column_text(selectstmt, 0);
+            std::string username = (char *) sqlite3_column_text(selectstmt, 1);
+            std::cout << std::endl << "Name : " << name << std::endl;
+            std::cout << "Username : " << username << std::endl << std::endl; 
+            user_vector.push_back(username);
+            user_vector.push_back(name);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return user_vector;
+}   
+
 void read_thread(int newsockfd)
 {
     char buffer[256];
@@ -545,7 +565,9 @@ void control_thread() {
                         write_to_socket(sockfd, ans);
 
                         std::vector<std::string> userlist = get_online_users(db, zErrMsg);
-                        write_to_socket(sockfd,vector2string(userlist));  
+                        write_to_socket(sockfd,vector2string(userlist));
+                        userlist = get_all_users(db, zErrMsg);
+                        write_to_socket(sockfd,vector2string(userlist));
                     }
                     else {
                         // tell client wrong pass

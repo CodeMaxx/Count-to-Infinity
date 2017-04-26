@@ -5,6 +5,22 @@
 // bool chat::loggedin = false;
 // int chat::sockfd = 0;
 
+void chat::print_all_users() {
+    std::cout << "List of ALL users: " << std::endl;
+    std::cout << "Name \t username" << std::endl;
+    for (auto x : all) {
+        std::cout << x.name << " \t "  << x.username << std::endl;
+    }
+}
+
+void chat::print_online_users() {
+    std::cout << "List of ALL users: " << std::endl;
+    std::cout << "Name \t username" << std::endl;
+    for (auto x : online) {
+        std::cout << x.name << " \t "  << x.username << std::endl;
+    }
+}
+
 void chat::initialise_online(std::vector<std::string> msg) {
     msg.erase(msg.begin());
     identity id;
@@ -34,7 +50,7 @@ void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vec
         id.username = *i;
         i++;
         id.name = *i;
-        online.push_back(id);
+        all.push_back(id);
     }
 }
 
@@ -125,8 +141,11 @@ void chat::read_thread()
             loggedin = false;
         }
         else if(messageVector[0] == "olusers") {
-            // initialise_online(messageVector);
+            initialise_online(messageVector);
         }
+        else if(messageVector[0] == "users") {
+            initialise_all(messageVector);
+        } 
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
         }
@@ -163,50 +182,50 @@ void chat::write_thread()
         if(str_buffer[0] == '/')
         {
             std::string command = str_buffer;
-            //std::string reg = "/register";
-            //std::string login = "/login";
             if(command.substr(0, strlen("/help")).compare("/help") == 0)
             {
                 print_help();
             }
-            else if(command.substr(0, strlen("/register")).compare("/register") == 0)
-            {
-                std::string name, password, username;
-                std::vector<std::string> message;
-                message.push_back("register");
-                printf("Username: ");
-                getline(std::cin, username);
-                printf("Name: ");
-                getline(std::cin, name);
-                printf("Password: ");
-                getline(std::cin, password);
-
-                while(password.find('#') != std::string::npos){
-                    printf("'#' not allowed. Enter another password.\n");
+            if(!loggedin) {
+                if(command.substr(0, strlen("/register")).compare("/register") == 0)
+                {
+                    std::string name, password, username;
+                    std::vector<std::string> message;
+                    message.push_back("register");
+                    printf("Username: ");
+                    getline(std::cin, username);
+                    printf("Name: ");
+                    getline(std::cin, name);
+                    printf("Password: ");
                     getline(std::cin, password);
+
+                    while(password.find('#') != std::string::npos){
+                        printf("'#' not allowed. Enter another password.\n");
+                        getline(std::cin, password);
+                    }
+                    message.push_back(username);
+                    message.push_back(name);
+                    message.push_back(password);
+
+                    write_helper(vector2string(message)); // Ideally we should get a "Username already exists error here"
+                    // but due to threads it is a problem. Maybe we should make
+                    // threads variables public and then synchronise somehow.
                 }
-                message.push_back(username);
-                message.push_back(name);
-                message.push_back(password);
+                else if(command.substr(0, strlen("/login")).compare("/login") == 0){
+                    std::string username, password;
+                    std::vector<std::string> msg;
+                    printf("Username: ");
+                    getline(std::cin, username);
+                    printf("Password: ");
+                    getline(std::cin, password);
+                    msg.push_back("login");
+                    msg.push_back(username);
+                    msg.push_back(password);
 
-                write_helper(vector2string(message)); // Ideally we should get a "Username already exists error here"
-                // but due to threads it is a problem. Maybe we should make
-                // threads variables public and then synchronise somehow.
+                    write_helper(vector2string(msg));
+                }
             }
-            else if(command.substr(0, strlen("/login")).compare("/login") == 0){
-                std::string username, password;
-                std::vector<std::string> msg;
-                printf("Username: ");
-                getline(std::cin, username);
-                printf("Password: ");
-                getline(std::cin, password);
-                msg.push_back("login");
-                msg.push_back(username);
-                msg.push_back(password);
-
-                write_helper(vector2string(msg));
-            }
-            if (loggedin) {
+            else {
                 if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
                     printf("Friend's username: ");
                     getline(std::cin, dest_username);
@@ -214,10 +233,10 @@ void chat::write_thread()
     
                 }
                 else if(command.substr(0, strlen("/showall")).compare("/showall") == 0){
-                    
+                    print_all_users();
                 }
                 else if(command.substr(0, strlen("/showOnline")).compare("/showOnline") == 0){
-    
+                    print_online_users();
                 }
                 else if(command.substr(0, strlen("/logout")).compare("/logout") == 0){
                     write_helper(vector2string(std::vector<std::string>({"logout"})));
@@ -230,10 +249,15 @@ void chat::write_thread()
         }
         else if(loggedin)
         {
-            std::vector<std::string> messageVector({"message"});
-            messageVector.push_back(dest_username);
-            messageVector.push_back(str_buffer);
-            write_helper(vector2string(messageVector));
+            if(dest_username != "") {
+                std::vector<std::string> messageVector({"message"});
+                messageVector.push_back(dest_username);
+                messageVector.push_back(str_buffer);
+                write_helper(vector2string(messageVector));
+            }
+            else {
+                std::cout << "Please select a person to chat. More details on /help page" << std::endl;
+            }
         }
         else
         {
