@@ -25,6 +25,7 @@
 #include <sodium.h>
 #include <sstream>
 #include <unordered_map>
+#include <set>
 #include "lockless_queue.cpp"
 #include "utils.cpp"
 
@@ -36,6 +37,8 @@
 int portno;
 
 lockless_queue<std::vector<std::string>> control_thread_queue;
+
+std::set<int> logged_in_sockets;
 
 bool ldap_login(std::string cn, std::string pass)
 {
@@ -297,24 +300,24 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     return false;
 }
 
-bool logout_func(std::string username,sqlite3* db, char* zErrMsg) {
-    std::string query = "UPDATE main SET online = 0, socket = 0 WHERE username = '" + username + "'";
+// bool logout_func(std::string username,sqlite3* db, char* zErrMsg) {
+//     std::string query = "UPDATE main SET online = 0, socket = 0 WHERE username = '" + username + "'";
 
-    std::cout << username << " has logged out" << std::endl;
+//     std::cout << username << " has logged out" << std::endl;
 
-    int rc;
-    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
-    fprintf(stderr, "%s\n", query.c_str());
-    if( rc != SQLITE_OK ) {
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      sqlite3_free(zErrMsg);
-      return false;
-    }
-    else {
-        fprintf(stdout, "Records updated successfully\n");
-        return true;
-    }
-}
+//     int rc;
+//     rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+//     fprintf(stderr, "%s\n", query.c_str());
+//     if( rc != SQLITE_OK ) {
+//       fprintf(stderr, "SQL error: %s\n", zErrMsg);
+//       sqlite3_free(zErrMsg);
+//       return false;
+//     }
+//     else {
+//         fprintf(stdout, "Records updated successfully\n");
+//         return true;
+//     }
+// }
 
 std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
     std::string query = "SELECT username FROM main WHERE socket = " + std::to_string(sockfd);
@@ -364,6 +367,7 @@ int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
 }
 
 void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
+    logged_in_sockets.erase(sockfd);
     std::string query = "UPDATE main " \
                     "SET online = 0, socket = 0 " \
                     "WHERE username = '" + username + "'";
@@ -381,6 +385,7 @@ void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrM
 }
 
 void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
+    logged_in_sockets.insert(sockfd);
     std::string query = "UPDATE main SET online = 1, socket = " + std::to_string(sockfd) + " WHERE username = '" + username + "'";
 
     int rc;
@@ -516,6 +521,18 @@ void write_to_socket(int newsockfd, std::string data) {
 
 }
 
+void online_notify(std::string username) {
+    for (int socket : logged_in_sockets) {
+        write_to_socket(socket, vector2string(std::vector<std::string>({"online", username})));
+    }
+}
+
+void offline_notify(std::string username) {
+    for (int socket : logged_in_sockets) {
+        write_to_socket(socket, vector2string(std::vector<std::string>({"offline", username})));
+    }
+}
+
 void control_thread() {
     sqlite3 *db;
     char *zErrMsg = 0;
@@ -561,6 +578,7 @@ void control_thread() {
                         // send online data and people registered here
                         
                         std::cout << sockfd << std::endl;
+                        online_notify(messageVector[1]);
                         set_user_online(messageVector[1], sockfd, db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
@@ -568,6 +586,7 @@ void control_thread() {
                         write_to_socket(sockfd,vector2string(userlist));
                         userlist = get_all_users(db, zErrMsg);
                         write_to_socket(sockfd,vector2string(userlist));
+
                     }
                     else {
                         // tell client wrong pass
@@ -576,6 +595,16 @@ void control_thread() {
                     }
                     fprintf(stderr, "%s\n", ans.c_str());
 
+                }
+                else if (messageVector[0] == "closed" or messageVector[0] == "logout") {
+                    std::string source;
+                    if((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        set_user_offline(source, sockfd, db, zErrMsg);
+                        offline_notify(messageVector[1]);
+                        if(messageVector[0] == "logout") {
+                            write_to_socket(sockfd, vector2string(messageVector));
+                        }
+                    }
                 }
                 else if(messageVector[0] == "message") {
                     std::string source; 
@@ -592,15 +621,6 @@ void control_thread() {
                     }
                     else {
                         std::cout << "Couldn't find " << std::endl;
-                    }
-                }
-                else if (messageVector[0] == "closed" or messageVector[0] == "logout") {
-                    std::string source;
-                    if((source = get_username(sockfd, db, zErrMsg)) != "") {
-                        logout_func(source, db, zErrMsg);
-                        if(messageVector[0] == "logout") {
-                            write_to_socket(sockfd, vector2string(messageVector));
-                        }
                     }
                 }
                 auto temp = head->next;

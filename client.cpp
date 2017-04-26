@@ -145,7 +145,13 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "users") {
             initialise_all(messageVector);
-        } 
+        }
+        else if(messageVector[0] == "online") {
+            std::cout << messageVector[1] << " came online now" << std::endl; 
+        }
+        else if(messageVector[0] == "offline") {
+            std::cout << messageVector[1] << " went offline" << std::endl; 
+        }
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
         }
