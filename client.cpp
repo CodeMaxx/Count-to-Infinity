@@ -1,9 +1,11 @@
 #include "client.h"
 #include "utils.cpp"
 
-int chat::portno = 9399;
-bool chat::loggedin = false;
-int chat::sockfd = 0;
+chat c;
+
+// int chat::portno = 9399;
+// bool chat::loggedin = false;
+// int chat::sockfd = 0;
 
 void chat::initialise_online(std::vector<std::string> msg) {
     msg.erase(msg.begin());
@@ -52,25 +54,25 @@ void chat::error(const char *msg)
     exit(0);
 }
 
-void chat::free_port(int s)
-{
-    int optval = 1;
-    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
-    close(sockfd); // Closing the socket.
-    exit(0);
-}
+// void chat::free_port(int s)
+// {
+//     int optval = 1;
+//     setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
+//     close(sockfd); // Closing the socket.
+//     exit(0);
+// }
 
-void chat::signal_capture()
-{
-    struct sigaction sigIntHandler;
-    sigIntHandler.sa_handler = free_port;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-    while(1)
-    {
-        sigaction(SIGINT, &sigIntHandler, NULL);
-    }
-}
+// void chat::signal_capture()
+// {
+//     struct sigaction sigIntHandler;
+//     sigIntHandler.sa_handler = free_port;
+//     sigemptyset(&sigIntHandler.sa_mask);
+//     sigIntHandler.sa_flags = 0;
+//     while(1)
+//     {
+//         sigaction(SIGINT, &sigIntHandler, NULL);
+//     }
+// }
 
 void chat::write_helper(std::string str_buffer){ // Define this
     int n;
@@ -88,7 +90,7 @@ void chat::write_helper(char buffer[])
     if (n < 0) error("ERROR writing to socket");
 }
 
-void chat::read_thread()
+void read_thread()
 {
     int n;
     char endOfMessage = '#';
@@ -98,23 +100,23 @@ void chat::read_thread()
     while(1)
     {
         bzero(buffer,256);
-        n = read(sockfd,buffer,255); // Putting data from socket to buffer
+        n = read(c.sockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0)
-            error("ERROR reading from socket");
+            c.error("ERROR reading from socket");
         else
             buffer_str = buffer;
 
         while(buffer_str.back() != endOfMessage){
             bzero(buffer, 256);
-            n = read(sockfd, buffer, 255);
+            n = read(c.sockfd, buffer, 255);
             if (n < 0)
-                error("ERROR reading from socket");
+                c.error("ERROR reading from socket");
             else
                 buffer_str.append(buffer);
         }
         auto messageVector = string2vector(buffer_str);
         if(messageVector[0] == "login") {
-            loggedin = true;
+            c.loggedin = true;
             std::cout << "Logged in as " << messageVector[1] << std::endl; 
         }
         else if(messageVector[0] == "wrong") {
@@ -122,7 +124,7 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "logout") {
             printf("You have logged out\n" );
-            loggedin = false;
+            c.loggedin = false;
         }
         else if(messageVector[0] == "olusers") {
             // initialise_online(messageVector);
@@ -144,7 +146,7 @@ void chat::print_help() {
     printf("/sendfile - To send file to friend\n");
 }
 
-void chat::write_thread()
+void write_thread()
 {
     int n;
     char buffer[256];
@@ -167,7 +169,7 @@ void chat::write_thread()
             //std::string login = "/login";
             if(command.substr(0, strlen("/help")).compare("/help") == 0)
             {
-                print_help();
+                c.print_help();
             }
             else if(command.substr(0, strlen("/register")).compare("/register") == 0)
             {
@@ -189,7 +191,7 @@ void chat::write_thread()
                 message.push_back(name);
                 message.push_back(password);
 
-                write_helper(vector2string(message)); // Ideally we should get a "Username already exists error here"
+                c.write_helper(vector2string(message)); // Ideally we should get a "Username already exists error here"
                 // but due to threads it is a problem. Maybe we should make
                 // threads variables public and then synchronise somehow.
             }
@@ -204,9 +206,9 @@ void chat::write_thread()
                 msg.push_back(username);
                 msg.push_back(password);
 
-                write_helper(vector2string(msg));
+                c.write_helper(vector2string(msg));
             }
-            if (loggedin) {
+            if (c.loggedin) {
                 if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
                     printf("Friend's username: ");
                     getline(std::cin, dest_username);
@@ -220,7 +222,7 @@ void chat::write_thread()
     
                 }
                 else if(command.substr(0, strlen("/logout")).compare("/logout") == 0){
-                    write_helper(vector2string(std::vector<std::string>({"logout"})));
+                    c.write_helper(vector2string(std::vector<std::string>({"logout"})));
                 }
                 else if(command.substr(0, strlen("/sendfile")).compare("/sendfile") == 0){
     
@@ -228,16 +230,16 @@ void chat::write_thread()
             }
 
         }
-        else if(loggedin)
+        else if(c.loggedin)
         {
             std::vector<std::string> messageVector({"message"});
             messageVector.push_back(dest_username);
             messageVector.push_back(str_buffer);
-            write_helper(vector2string(messageVector));
+            c.write_helper(vector2string(messageVector));
         }
         else
         {
-            print_help();
+            c.print_help();
         }
     }
 }
@@ -279,9 +281,9 @@ void chat::connect_to_server(char *server_name, int port_num)
 void chat::start_chat()
 {
 
-    std::thread read_th(chat::read_thread);
-    std::thread write_th(chat::write_thread);
-    std::thread signal_th(chat::signal_capture);
+    std::thread read_th(read_thread);
+    std::thread write_th(write_thread);
+    // std::thread signal_th(chat::signal_capture);
 
     while(1){;}
 }
@@ -293,7 +295,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    chat c;
 
     c.connect_to_server(argv[1], atoi(argv[2]));
     c.start_chat();

@@ -201,7 +201,7 @@ bool find_ldap_username(std::string username)
     }
 
     /* search from this point */
-    char* base="dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
+    char base[43]="dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
 
     /* return everything */
     std::string filter = "cn=" + username;
@@ -295,6 +295,25 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     }
     sqlite3_finalize(selectstmt);
     return false;
+}
+
+bool logout_func(std::string username,sqlite3* db, char* zErrMsg) {
+    std::string query = "UPDATE main SET online = 0, socket = 0 WHERE username = '" + username + "'";
+
+    std::cout << username << " has logged out" << std::endl;
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+      return false;
+    }
+    else {
+        fprintf(stdout, "Records updated successfully\n");
+        return true;
+    }
 }
 
 std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
@@ -409,6 +428,11 @@ void read_thread(int newsockfd)
         n = read(newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0)
             error("ERROR reading from socket");
+        else if (n == 0) { // client closed connection 
+            std::vector<std::string> closedMessage({"closed", std::to_string(newsockfd)});
+            control_thread_queue.produce(closedMessage);
+            break;
+        }            
         else
             buffer_str = buffer;
 
@@ -533,7 +557,6 @@ void control_thread() {
                 }
                 else if(messageVector[0] == "message") {
                     std::string source; 
-                    std::cout << "Came in message" << std::endl;
                     if ((source = get_username(sockfd, db, zErrMsg)) != "") {
                         int destsockfd;
                         if((destsockfd = get_socket(messageVector[1], db, zErrMsg)) != 0) {
@@ -549,7 +572,15 @@ void control_thread() {
                         std::cout << "Couldn't find " << std::endl;
                     }
                 }
-
+                else if (messageVector[0] == "closed" or messageVector[0] == "logout") {
+                    std::string source;
+                    if((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        logout_func(source, db, zErrMsg);
+                        if(messageVector[0] == "logout") {
+                            write_to_socket(sockfd, vector2string(messageVector));
+                        }
+                    }
+                }
                 auto temp = head->next;
                 delete head;
                 head = head->next;   
