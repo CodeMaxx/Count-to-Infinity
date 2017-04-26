@@ -14,7 +14,7 @@ void chat::print_all_users() {
 }
 
 void chat::print_online_users() {
-    std::cout << "List of ALL users: " << std::endl;
+    std::cout << "List of Online users: " << std::endl;
     std::cout << "Name \t username" << std::endl;
     for (auto x : online) {
         std::cout << x.name << " \t "  << x.username << std::endl;

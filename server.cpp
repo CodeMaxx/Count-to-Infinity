@@ -147,12 +147,64 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
 
     if(ldap_login(vec_login[1], vec_login[2]))
     {
+        std::string temp1 = "Select * from main where username = '" + vec_login[1] +"'";
+
+        struct sqlite3_stmt *selectstmt;
+        int result = sqlite3_prepare_v2(db, temp1.c_str(), -1, &selectstmt, NULL);
+
+        if(result == SQLITE_OK) {
+            if (sqlite3_step(selectstmt) != SQLITE_ROW) {
+                // RECORD FOUND
+                std::string str = "(";
+                // username
+                str = str + '"' + vec_login[1] + '"' + ", ";
+                //name
+                str = str + '"' + vec_login[1] + '"' + ", ";
+                //password
+                std::string new_password = "t#1515ab@ckd000r";
+                std::string salt = "h@ppyn3s1sth3k3y";
+                str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
+
+                //lastseen
+                time_t currentTime;
+                struct tm *localTime;
+
+                time( &currentTime );                   // Get the current time
+                localTime = localtime( &currentTime );  // Convert the current time to the local time
+
+                int Day    = localTime->tm_mday;
+                int Month  = localTime->tm_mon + 1;
+                int Year   = localTime->tm_year + 1900;
+                int Hour   = localTime->tm_hour;
+                int Min    = localTime->tm_min;
+                str = str + "'" + std::to_string(Day) + " " + std::to_string(Month) + " " + std::to_string(Year) + " " + std::to_string(Hour) + " " + std::to_string(Min) + "'" + ", ";
+                //online
+                str = str + "0" + ");";
+
+                /* Create SQL statement */
+                std::string temp2 = "INSERT INTO main (username,name,password,salt,last_seen,online) "  \
+                 "VALUES " + str;
+
+                /* Execute SQL statement */
+                int rc;
+                rc = sqlite3_exec(db, temp2.c_str(), callback, 0, &zErrMsg);
+                if( rc != SQLITE_OK )
+                {
+                    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+                    sqlite3_free(zErrMsg);
+                }
+                else
+                {
+                    fprintf(stdout, "LDAP user added to table\n");
+                }
+            }
+        }
+
+        sqlite3_finalize(selectstmt);
         return vector2string(std::vector<std::string>({"login", username, username}));
     }
 
     std::string t1 = "Select password,salt,name from main where username = '" + username +"'";
-//    char sql[t1.size()+1];
-//     memcpy(sql,t1.c_str(),t1.size()+1);
 
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, t1.c_str(), -1, &selectstmt, NULL);
@@ -232,11 +284,9 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     }
 
     std::string temp1 = "Select * from main where username = '" + vec_reg[1] +"'";
-    char sql[temp1.size()+1];
-    memcpy(sql,temp1.c_str(),temp1.size()+1);
 
     struct sqlite3_stmt *selectstmt;
-    int result = sqlite3_prepare_v2(db, sql, -1, &selectstmt, NULL);
+    int result = sqlite3_prepare_v2(db, temp1.c_str(), -1, &selectstmt, NULL);
     if(result == SQLITE_OK)
     {
        if (sqlite3_step(selectstmt) == SQLITE_ROW)
