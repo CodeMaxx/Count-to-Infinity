@@ -118,27 +118,7 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName)
 void error(const char *msg)
 {
     perror(msg);
-    exit(1);
-}
-
-void my_handler(int s)
-{
-    int optval = 1;
-    setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
-    exit(0);
-}
-
-void signal_capture(int portno)
-{
-    struct sigaction sigIntHandler;
-
-    sigIntHandler.sa_handler = my_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-    while(1)
-    {
-        sigaction(SIGINT, &sigIntHandler, NULL);
-    }
+    // exit(1);
 }
 
 std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg)
@@ -709,14 +689,16 @@ int main(int argc, char *argv[])
     serv_addr.sin_addr.s_addr = INADDR_ANY; // Pick up the localhost address
     serv_addr.sin_port = htons(portno); // Computer stores in a different way. So we convert it to how the networks mananges it.
     // Computer stores as little endian. Network takes big endian.
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) // We are binding the file descriptor and the server address.
         error("ERROR on binding");
+
     listen(sockfd,5); // We will now only refer to our socket by the descriptor. At max 5 socket connections in waiting.
     // Probably 1 is connected and 5 are waiting. Check this!
     // We have not started listening yet. We are just saying it is a listening type of port.
     // 5 waiting for handshakes. After newsockfd is created we can just use multiple threads.
     clilen = sizeof(cli_addr);
-    // std::thread signal_th(signal_capture, portno);
 
     std::thread controlthread(control_thread);
     std::vector<std::thread> threads;
