@@ -672,6 +672,8 @@ int main(int argc, char *argv[])
     socklen_t clilen;
     struct sockaddr_in serv_addr, cli_addr; // in stands for internet family addresses.
     int n;
+    int yes=1;        // for setsockopt() SO_REUSEADDR, below
+    
     if (argc < 2) {
         fprintf(stderr,"ERROR, no port provided\n");
         exit(1);
@@ -689,6 +691,7 @@ int main(int argc, char *argv[])
     serv_addr.sin_addr.s_addr = INADDR_ANY; // Pick up the localhost address
     serv_addr.sin_port = htons(portno); // Computer stores in a different way. So we convert it to how the networks mananges it.
     // Computer stores as little endian. Network takes big endian.
+
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) // We are binding the file descriptor and the server address.
