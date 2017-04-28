@@ -20,6 +20,12 @@ class chat
     {
         std::string username; // Username
         std::string name; // Name
+        std::string status;
+
+        identity()
+        {
+            username = name = status = "";
+        }
     };
 
     struct history
@@ -37,8 +43,6 @@ class chat
         };
 
         std::unordered_map<std::string, frnd> user_to_frnd; // Convert username to index for faster access of history
-
-
     };
 
 public:

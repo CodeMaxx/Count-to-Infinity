@@ -127,7 +127,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
 
     if(ldap_login(vec_login[1], vec_login[2]))
     {
-        std::string temp1 = "Select * from main where username = '" + vec_login[1] +"'";
+        std::string temp1 = "Select * from users where username = '" + vec_login[1] +"'";
 
         struct sqlite3_stmt *selectstmt;
         int result = sqlite3_prepare_v2(db, temp1.c_str(), -1, &selectstmt, NULL);
@@ -162,7 +162,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
                 str = str + "0" + ");";
 
                 /* Create SQL statement */
-                std::string temp2 = "INSERT INTO main (username,name,password,salt,last_seen,online) "  \
+                std::string temp2 = "INSERT INTO users (username,name,password,salt,last_seen,online) "  \
                  "VALUES " + str;
 
                 /* Execute SQL statement */
@@ -184,7 +184,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
         return vector2string(std::vector<std::string>({"login", username, username}));
     }
 
-    std::string t1 = "Select password,salt,name from main where username = '" + username +"'";
+    std::string t1 = "Select password,salt,name from users where username = '" + username +"'";
 
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, t1.c_str(), -1, &selectstmt, NULL);
@@ -263,7 +263,7 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
         return false;
     }
 
-    std::string temp1 = "Select * from main where username = '" + vec_reg[1] +"'";
+    std::string temp1 = "Select * from users where username = '" + vec_reg[1] +"'";
 
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, temp1.c_str(), -1, &selectstmt, NULL);
@@ -308,7 +308,7 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
             str = str + "0" + ");";
 
             /* Create SQL statement */
-            std::string temp2 = "INSERT INTO main (username,name,password,salt,last_seen,online) "  \
+            std::string temp2 = "INSERT INTO users (username,name,password,salt,last_seen,online) "  \
                  "VALUES " + str;
 
             /* Execute SQL statement */
@@ -331,7 +331,7 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 }
 
 // bool logout_func(std::string username,sqlite3* db, char* zErrMsg) {
-//     std::string query = "UPDATE main SET online = 0, socket = 0 WHERE username = '" + username + "'";
+//     std::string query = "UPDATE users SET online = 0, socket = 0 WHERE username = '" + username + "'";
 
 //     std::cout << username << " has logged out" << std::endl;
 
@@ -350,7 +350,7 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
 // }
 
 std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
-    std::string query = "SELECT username FROM main WHERE socket = " + std::to_string(sockfd);
+    std::string query = "SELECT username FROM users WHERE socket = " + std::to_string(sockfd);
 
     std::cout << "Socket ID: " << sockfd << std::endl;
 
@@ -374,7 +374,7 @@ std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
 }
 
 int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
-    std::string query = "SELECT socket, online FROM main WHERE username = '" + username + "'";
+    std::string query = "SELECT socket, online FROM users WHERE username = '" + username + "'";
 
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
@@ -398,7 +398,7 @@ int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
 
 void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
     logged_in_sockets.erase(sockfd);
-    std::string query = "UPDATE main " \
+    std::string query = "UPDATE users " \
                     "SET online = 0, socket = 0 " \
                     "WHERE username = '" + username + "'";
 
@@ -416,7 +416,7 @@ void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrM
 
 void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
     logged_in_sockets.insert(sockfd);
-    std::string query = "UPDATE main SET online = 1, socket = " + std::to_string(sockfd) + " WHERE username = '" + username + "'";
+    std::string query = "UPDATE users SET online = 1, socket = " + std::to_string(sockfd) + " WHERE username = '" + username + "'";
 
     int rc;
     rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
@@ -431,7 +431,7 @@ void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMs
 }
 
 std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
-    std::string query = "SELECT name, username FROM main WHERE online = 1";
+    std::string query = "SELECT name, username FROM users WHERE online = 1";
     std::vector<std::string> user_vector;
     user_vector.push_back("olusers");
     struct sqlite3_stmt *selectstmt;
@@ -451,7 +451,7 @@ std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
 }   
 
 std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg) {
-    std::string query = "SELECT name, username FROM main";
+    std::string query = "SELECT name, username FROM users";
     std::vector<std::string> user_vector;
     user_vector.push_back("users");
     struct sqlite3_stmt *selectstmt;
@@ -568,7 +568,7 @@ void control_thread() {
     char *zErrMsg = 0;
 
     /* Open database */
-    int rc = sqlite3_open("main.db", &db);
+    int rc = sqlite3_open("users.db", &db);
     if(rc)
     {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));

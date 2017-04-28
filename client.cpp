@@ -167,6 +167,7 @@ void chat::print_help() {
     printf("/showOnline - Show all online users\n");
     printf("/logout - To logout and quit\n");
     printf("/sendfile - To send file to friend\n");
+    printf("/setStatus - Set a status for yourself");
 }
 
 void chat::write_thread()
