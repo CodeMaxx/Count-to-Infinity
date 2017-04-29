@@ -388,6 +388,7 @@ int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
     return 0;
 }
 
+
 // Set the user's offline bit to 1
 void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
     logged_in_sockets.erase(sockfd);
@@ -428,7 +429,7 @@ void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMs
 
 // Get a list of online users who are your friends
 std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg, std::string user) {
-    std::string query = "SELECT username FROM users WHERE online = 1 INTERSECT SELECT * from friends WHERE user1 = '" + user + "' and edge = 0";
+    std::string query = "SELECT username FROM users WHERE online = 1 INTERSECT SELECT user2 from friends WHERE user1 = '" + user + "' and edge = 0";
     std::vector<std::string> user_vector;
     user_vector.push_back("olusers");
     struct sqlite3_stmt *selectstmt;
