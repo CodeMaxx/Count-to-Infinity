@@ -487,10 +487,97 @@ int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user
         return -2;
 }
 
-// Update the relation between two users
 
-void read_thread(int newsockfd)
+// Check if user1-user2 pair exists in table friends
+bool check_pair_edge(sqlite3* db, char* zErrMsg, std::string user1, std::string user2)
 {
+    std::string query = "SELECT * from friends WHERE user1='" + user1 + "' and user2='" + user2 + "'";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+// Find user by username in database
+bool find_db_username(sqlite3* db, char* zErrMsg, std::string username) {
+    std::string query = "SELECT * FROM users WHERE username = '" + username + "'";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Block users
+void block(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
+    std::string query;
+
+    bool exists = check_pair_edge(db, zErrMsg, user1, user2);
+
+    if(exists)
+        query = "UPDATE friends SET edge = 2 WHERE user1 = '" + user1 + "' and user2 = '" + user2 +"'";
+    else
+        query = "INSERT INTO friends (user1, user2, edge) values ('" + user1 + "', '" + user2 +"', 2)";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+    if(exists)
+        query = "UPDATE friends SET edge = -2 WHERE user1 = '" + user2 + "' and user2 = '" + user1 +"'";
+    else
+        query = "INSERT INTO friends (user1, user2, edge) values ('" + user2 + "', '" + user1 +"', -2)";
+
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+    else
+    {
+        printf(user1 + " Blocked " + user2);
+    }
+}
+
+void unblock(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
+    std::string query = "DELETE from friends WHERE user1 = '" + user1 + "' and user2 = '" + user2 +"'";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+    query = "DELETE from friends WHERE user1 = '" + user2 + "' and user2 = '" + user1 +"'";
+
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+    else
+    {
+        printf(user1 + " unblocked " + user2);
+    }
+}
+
+void read_thread(int newsockfd) {
     char buffer[256];
     char endOfMessage = '#';
     int n;
@@ -695,29 +782,70 @@ void control_thread() {
                 {
                     std::string source;
                     if ((source = get_username(sockfd, db, zErrMsg)) != "") {
-                        int destsockfd;
-
                         int check = check_friend(db, zErrMsg, source, messageVector[1]);
                         if(check == -2) {
                             write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
                         }
-                        else if(find_db_username(messageVector[1])) {
+                        else if(find_db_username(db, zErrMsg, messageVector[1])) {
                             // Block the person
+                            block(db, zErrMsg, source, messageVector[1]);
                             write_to_socket(sockfd, vector2string(std::vector<std::string>({"blocked", messageVector[1]})));
                         }
                     }
-                    // TODO ;
                 }
                 else if(messageVector[0] == "unblock")
                 {
-                    // TODO
+                    std::string source;
+                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
+                        if(check == -2) {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                        }
+                        else if(check == 2) {
+                            // Unblock the person
+                            unblock(db, zErrMsg, source, messageVector[1]);
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"unblocked", messageVector[1]})));
+                        }
+                        else if(find_db_username(db, zErrMsg, messageVector[1]))
+                        {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"notblocked", messageVector[1]})));
+                        }
+                        else
+                        {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                        }
+                    }
                 }
-                else if(messageVector[0] == "friend")
+                else if(messageVector[0] == "friend") // Send friend request
                 {
+                    std::string source;
+                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
+                        if(check == -2) {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                        }
+                        else if(find_db_username(db, zErrMsg, messageVector[1])) {
+                            // Send friend request
+                            send_friend_req(db, zErrMsg, source, messageVector[1]);
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"blocked", messageVector[1]})));
+                        }
+                    }
                     // TODO friend request
                 }
                 else if(messageVector[0] == "accept")
                 {
+                    std::string source;
+                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
+                        if(check == -2) {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                        }
+                        else if(find_db_username(db, zErrMsg, messageVector[1])) {
+                            // Block the person
+                            accept_friend_req(db, zErrMsg, source, messageVector[1]);
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"blocked", messageVector[1]})));
+                        }
+                    }
                     // TODO Accept request
                 }
 

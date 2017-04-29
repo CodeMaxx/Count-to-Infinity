@@ -173,6 +173,12 @@ void chat::read_thread()
         else if(messageVector[0] == "blocked") {
             std::cout << messageVector[1] + " has been blocked. You will not be able to reach him/her anymore. Use /unblock to unblock" << std::endl;
         }
+        else if(messageVector[0] == "unblocked") {
+            std::cout << "Unblocked " + messageVector[1] << std::endl;
+        }
+        else if(messageVector[0] == "notblocked") {
+            std::cout << messageVector[1] + " was never blocked.";
+        }
     }
 }
 
