@@ -40,8 +40,8 @@ lockless_queue<std::vector<std::string>> control_thread_queue;
 
 std::set<int> logged_in_sockets;
 
-bool ldap_login(std::string cn, std::string pass)
-{
+// Login from LDAP server
+bool ldap_login(std::string cn, std::string pass) {
     LDAP *ld;
     int  result;
     int  auth_method    = LDAP_AUTH_SIMPLE;
@@ -68,6 +68,7 @@ bool ldap_login(std::string cn, std::string pass)
         return true;
 }
 
+// Hash a password to get hash and salt
 std::pair<std::string, std::string> hash_password(std::string password) {
     const char* PASSWORD = password.c_str();
     unsigned char salt[crypto_pwhash_SALTBYTES];
@@ -85,6 +86,8 @@ std::pair<std::string, std::string> hash_password(std::string password) {
     return std::pair<std::string, std::string>(std::string(reinterpret_cast<char*>(key), 16), std::string(reinterpret_cast<char*>(salt), 16));
 }
 
+
+// Check if password matches with the hashed password
 bool check_password(std::string password, std::string key_given, std::string salt_given) {
     const char* PASSWORD = password.c_str();
     unsigned char salt[crypto_pwhash_SALTBYTES];
@@ -104,8 +107,9 @@ bool check_password(std::string password, std::string key_given, std::string sal
     return std::string(reinterpret_cast<char*>(key), 16) == key_given;
 }
 
-static int callback(void *NotUsed, int argc, char **argv, char **azColName)
-{
+
+// Debugging database requests on server
+static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
     int i;
     for(i=0; i<argc; i++)
     {
@@ -115,14 +119,15 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName)
    return 0;
 }
 
-void error(const char *msg)
-{
+
+// Display and explain errors
+void error(const char *msg) {
     perror(msg);
-    // exit(1);
 }
 
-std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg)
-{
+
+// Login users
+std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg) {
     std::string username = vec_login[1];
 
     if(ldap_login(vec_login[1], vec_login[2]))
@@ -215,8 +220,9 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
     return "";
 }
 
-bool find_ldap_username(std::string username)
-{
+
+// Find if a username is on LDAP server
+bool find_ldap_username(std::string username) {
     LDAP *ld;
     int  result;
     int  auth_method    = LDAP_AUTH_SIMPLE;
@@ -256,8 +262,9 @@ bool find_ldap_username(std::string username)
         return false;
 }
 
-bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
-{
+
+// Register users
+bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg) {
     if(find_ldap_username(vec_reg[1]))
     {
         return false;
@@ -330,25 +337,8 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg)
     return false;
 }
 
-// bool logout_func(std::string username,sqlite3* db, char* zErrMsg) {
-//     std::string query = "UPDATE users SET online = 0, socket = 0 WHERE username = '" + username + "'";
 
-//     std::cout << username << " has logged out" << std::endl;
-
-//     int rc;
-//     rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
-//     fprintf(stderr, "%s\n", query.c_str());
-//     if( rc != SQLITE_OK ) {
-//       fprintf(stderr, "SQL error: %s\n", zErrMsg);
-//       sqlite3_free(zErrMsg);
-//       return false;
-//     }
-//     else {
-//         fprintf(stdout, "Records updated successfully\n");
-//         return true;
-//     }
-// }
-
+// Get username of a user connected on a particular socket
 std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
     std::string query = "SELECT username FROM users WHERE socket = " + std::to_string(sockfd);
 
@@ -373,6 +363,8 @@ std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
     return "";
 }
 
+
+// Get socket number a user is connected on
 int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
     std::string query = "SELECT socket, online FROM users WHERE username = '" + username + "'";
 
@@ -396,6 +388,7 @@ int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
     return 0;
 }
 
+// Set the user's offline bit to 1
 void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
     logged_in_sockets.erase(sockfd);
     std::string query = "UPDATE users " \
@@ -414,6 +407,8 @@ void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrM
     }
 }
 
+
+// Set the user's online bit to 1
 void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
     logged_in_sockets.insert(sockfd);
     std::string query = "UPDATE users SET online = 1, socket = " + std::to_string(sockfd) + " WHERE username = '" + username + "'";
@@ -430,6 +425,8 @@ void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMs
     }
 }
 
+
+// Get a list of online users who are your friends TODO
 std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
     std::string query = "SELECT name, username FROM users WHERE online = 1";
     std::vector<std::string> user_vector;
@@ -450,6 +447,8 @@ std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
     return user_vector;
 }   
 
+
+// Get a vector containing all users
 std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg) {
     std::string query = "SELECT name, username FROM users";
     std::vector<std::string> user_vector;
@@ -788,7 +787,7 @@ void control_thread() {
                     std::string ans = login_func(messageVector, db, zErrMsg);
                     if(ans != "") {
                         // send online data and people registered here
-                        
+
                         std::cout << sockfd << std::endl;
                         online_notify(messageVector[1]);
                         set_user_online(messageVector[1], sockfd, db, zErrMsg);
@@ -806,7 +805,6 @@ void control_thread() {
                         write_to_socket(sockfd, vector2string(v));
                     }
                     fprintf(stderr, "%s\n", ans.c_str());
-
                 }
                 else if (messageVector[0] == "closed" or messageVector[0] == "logout") {
                     std::string source;
@@ -937,8 +935,7 @@ void control_thread() {
 
 
 // The Main Function - Established connections, runs threads
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     if(sodium_init() == -1 ) { // Hashing library initialization
         return 1;
     }
