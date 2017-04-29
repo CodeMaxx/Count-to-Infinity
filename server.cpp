@@ -427,20 +427,54 @@ void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMs
 }
 
 
+// Check the relationship between two users in the social graph
+int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user2){
+    std::string query = "SELECT edge FROM friends WHERE user1 = '" + user1 + "' and user2 = '" + user2 + "'";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
+            return int(sqlite3_column_int(selectstmt, 0));
+        }
+        else
+            return 3;
+    }
+    else
+        return -2;
+}
+
+
 // Get name from username
 std::string get_name(sqlite3* db, char* zErrMsg, std::string username) {
     std::string query = "SELECT name FROM users WHERE username = '" + username + "'";
     struct sqlite3_stmt *selectstmt_users;
     int result_users = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt_users, NULL);
-
+    std::string name;
     if(result_users == SQLITE_OK)
     {
-        std::string name = (char*) sqlite3_column_text(selectstmt_users, 0);
-        return name;
+        name = (char*) sqlite3_column_text(selectstmt_users, 0);
     }
     else
-        return "";
+        name = "";
     sqlite3_finalize(selectstmt_users);
+    return name;
+}
+
+
+// Get timestamp from username
+std::string get_timestamp(sqlite3* db, char* zErrMsg, std::string username) {
+    std::string query = "SELECT last_seen FROM users WHERE username = '" + username + "'";
+    struct sqlite3_stmt *selectstmt_users;
+    int result_users = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt_users, NULL);
+    std::string timestamp;
+    if(result_users == SQLITE_OK)
+    {
+        timestamp = (char*) sqlite3_column_text(selectstmt_users, 0);
+    }
+    else
+        timestamp = "";
+    sqlite3_finalize(selectstmt_users);
+    return timestamp;
 }
 
 
@@ -475,6 +509,12 @@ std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg, std::string u
             std::string username = (char *) sqlite3_column_text(selectstmt, 0);
             user_vector.push_back(username);
             user_vector.push_back(get_name(db, zErrMsg, username));
+            int r = check_friend(db, zErrMsg, user, username);
+            user_vector.push_back(std::string(r));
+            if(r == 0)
+            {
+                user_vector.push_back(get_timestamp(db, zErrMsg, username));
+            }
         }
     }
     sqlite3_finalize(selectstmt);
@@ -498,23 +538,6 @@ std::vector<std::string> get_friends(sqlite3* db, char* zErrMsg, std::string use
     }
     sqlite3_finalize(selectstmt);
     return friend_vector;
-}
-
-
-// Check the relationship between two users in the social graph
-int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user2){
-    std::string query = "SELECT edge FROM friends WHERE user1 = '" + user1 + "' and user2 = '" + user2 + "'";
-    struct sqlite3_stmt *selectstmt;
-    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
-    if(result == SQLITE_OK) {
-        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
-            return int(sqlite3_column_int(selectstmt, 0));
-        }
-        else
-            return 3;
-    }
-    else
-        return -2;
 }
 
 
