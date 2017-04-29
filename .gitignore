@@ -4,3 +4,6 @@ a.out
 .idea/*
 *.dSYM
 test_ldap*
+.gdb*
+peda*
+
