@@ -449,13 +449,13 @@ std::string get_name(sqlite3* db, char* zErrMsg, std::string username) {
     std::string query = "SELECT name FROM users WHERE username = '" + username + "'";
     struct sqlite3_stmt *selectstmt_users;
     int result_users = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt_users, NULL);
-    std::string name;
+    std::string name = "";
     if(result_users == SQLITE_OK)
     {
-        name = (char*) sqlite3_column_text(selectstmt_users, 0);
+        if(sqlite3_step(selectstmt_users) == SQLITE_ROW)
+            name = (char*) sqlite3_column_text(selectstmt_users, 0);
     }
-    else
-        name = "";
+
     sqlite3_finalize(selectstmt_users);
     return name;
 }
@@ -466,13 +466,12 @@ std::string get_timestamp(sqlite3* db, char* zErrMsg, std::string username) {
     std::string query = "SELECT last_seen FROM users WHERE username = '" + username + "'";
     struct sqlite3_stmt *selectstmt_users;
     int result_users = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt_users, NULL);
-    std::string timestamp;
+    std::string timestamp = "";
     if(result_users == SQLITE_OK)
     {
-        timestamp = (char*) sqlite3_column_text(selectstmt_users, 0);
+        if(sqlite3_step(selectstmt_users) == SQLITE_ROW)
+            timestamp = (char*) sqlite3_column_text(selectstmt_users, 0);
     }
-    else
-        timestamp = "";
     sqlite3_finalize(selectstmt_users);
     return timestamp;
 }
