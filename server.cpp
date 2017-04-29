@@ -510,7 +510,7 @@ std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg, std::string u
             user_vector.push_back(username);
             user_vector.push_back(get_name(db, zErrMsg, username));
             int r = check_friend(db, zErrMsg, user, username);
-            user_vector.push_back(std::string(r));
+            user_vector.push_back(std::to_string(r));
             if(r == 0)
             {
                 user_vector.push_back(get_timestamp(db, zErrMsg, username));
