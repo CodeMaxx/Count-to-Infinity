@@ -155,6 +155,24 @@ void chat::read_thread()
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
         }
+        else if(messageVector[0] == "sendreq"){
+            std:: cout << "You need to send a friend request to " + messageVector[1] + " first" << std::endl;
+        }
+        else if(messageVector[0] == "nfound"){
+            std:: cout << "This user does not exist. Please enter a valid username to chat." << std::endl;
+        }
+        else if(messageVector[0] == "acreq") {
+            std:: cout << "Please accept the friend request from " + messageVector[1] + " to start chatting" << std::endl;
+        }
+        else if(messageVector[0] == "notacreq") {
+            std:: cout << messageVector[1] + " has not yet accepted your friend request. You cannot chat." << std::endl;
+        }
+        else if(messageVector[0] == "ublock") {
+            std::cout << "You have blocked " + messageVector[1] + ". Type /unblock " + messageVector[1] + " to unblock and start chatting.";
+        }
+        else if(messageVector[0] == "blocked") {
+            std::cout << messageVector[1] + " has been blocked. You will not be able to reach him/her anymore. Use /unblock to unblock" << std::endl;
+        }
     }
 }
 

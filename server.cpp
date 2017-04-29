@@ -470,6 +470,25 @@ std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg) {
     return user_vector;
 }   
 
+
+// Check the relationship between two users in the social graph
+int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user2){
+    std::string query = "SELECT edge FROM friends WHERE user1 = '" + user1 + "' and user2 = '" + user2 + "'";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
+            return int(sqlite3_column_text(selectstmt, 0));
+        }
+        else
+            return 3;
+    }
+    else
+        return -2;
+}
+
+// Update the relation between two users
+
 void read_thread(int newsockfd)
 {
     char buffer[256];
@@ -568,7 +587,7 @@ void control_thread() {
     char *zErrMsg = 0;
 
     /* Open database */
-    int rc = sqlite3_open("users.db", &db);
+    int rc = sqlite3_open("main.db", &db);
     if(rc)
     {
       fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
@@ -640,7 +659,26 @@ void control_thread() {
                     std::string source; 
                     if ((source = get_username(sockfd, db, zErrMsg)) != "") {
                         int destsockfd;
-                        if((destsockfd = get_socket(messageVector[1], db, zErrMsg)) != 0) {
+
+                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
+                        if(check == 3) {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"sendreq", messageVector[1]})));
+                        }
+                        else if(check == 2) {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"ublock", messageVector[1]})));
+                        }
+                        else if(check == -2) {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                        }
+                        else if(check == -1)
+                        {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"acreq", messageVector[1]})));
+                        }
+                        else if(check == 1)
+                        {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"notacreq", messageVector[1]})));
+                        }
+                        else if((destsockfd = get_socket(messageVector[1], db, zErrMsg)) != 0) {
                             messageVector[1] = source;
                             std::cout << vector2string(messageVector) << std::endl;
                             write_to_socket(destsockfd, vector2string(messageVector));
@@ -650,9 +688,39 @@ void control_thread() {
                         }
                     }
                     else {
-                        std::cout << "Couldn't find " << std::endl;
+                        std::cout << "This guy is not registered!" << std::endl;
                     }
                 }
+                else if(messageVector[0] == "block")
+                {
+                    std::string source;
+                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        int destsockfd;
+
+                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
+                        if(check == -2) {
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                        }
+                        else if(find_db_username(messageVector[1])) {
+                            // Block the person
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"blocked", messageVector[1]})));
+                        }
+                    }
+                    // TODO ;
+                }
+                else if(messageVector[0] == "unblock")
+                {
+                    // TODO
+                }
+                else if(messageVector[0] == "friend")
+                {
+                    // TODO friend request
+                }
+                else if(messageVector[0] == "accept")
+                {
+                    // TODO Accept request
+                }
+
                 auto temp = head->next;
                 delete head;
                 head = head->next;   
