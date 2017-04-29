@@ -894,6 +894,7 @@ void control_thread() {
                 }
                 else if(messageVector[0] == "friend") // Send friend request
                 {
+                    std::cout << "I am here!1111" << std::endl;
                     std::string source;
                     if ((source = get_username(sockfd, db, zErrMsg)) != "") {
                         int check = check_friend(db, zErrMsg, source, messageVector[1]);
@@ -903,7 +904,10 @@ void control_thread() {
                         else if(find_db_username(db, zErrMsg, messageVector[1])) {
                             // Send friend request
                             send_friend_req(db, zErrMsg, source, messageVector[1]);
+                            int destsockfd;
+                            destsockfd = get_socket(messageVector[1], db, zErrMsg);
                             write_to_socket(sockfd, vector2string(std::vector<std::string>({"sentreq", messageVector[1]})));
+                            write_to_socket(destsockfd, vector2string(std::vector<std::string>({"recvreq", source})));
                         }
                     }
                 }
@@ -914,8 +918,11 @@ void control_thread() {
                         int check = check_friend(db, zErrMsg, source, messageVector[1]);
                         if(check == -1) {
                             // Accept Friend Request
+                            int destsockfd;
+                            destsockfd = get_socket(messageVector[1], db, zErrMsg);
                             accept_friend_req(db, zErrMsg, source, messageVector[1]);
                             write_to_socket(sockfd, vector2string(std::vector<std::string>({"accepted", messageVector[1]})));
+                            write_to_socket(destsockfd, vector2string(std::vector<std::string>({"acceptedyour", source})));
                         }
                     }
                 }

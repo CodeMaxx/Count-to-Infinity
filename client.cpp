@@ -182,8 +182,14 @@ void chat::read_thread()
         else if(messageVector[0] == "sentreq") {
             std::cout << "Sent a friend request to " + messageVector[1] << std::endl;
         }
+        else if(messageVector[0] == "recvreq") {
+            std::cout << "You received a friend request from " + messageVector[1] << std::endl;
+        }
         else if(messageVector[0] == "accepted") {
             std::cout << "You are now friends with " + messageVector[1] << std::endl;
+        }
+        else if(messageVector[0] == "acceptedyour") {
+            std::cout << messageVector[1] + " accepted your friend request" << std::endl;
         }
     }
 }
@@ -280,6 +286,30 @@ void chat::write_thread()
                 }
                 else if(command.substr(0, strlen("/sendfile")).compare("/sendfile") == 0){
                     
+                }
+                else if(command.substr(0, strlen("/friend")).compare("/friend") == 0) {
+                    std::string dest;
+                    printf("Name: ");
+                    std::cin >> dest;
+                    write_helper(vector2string(std::vector<std::string>({"friend", dest})));
+                }
+                else if(command.substr(0, strlen("/accept")).compare("/accept") == 0) {
+                    std::string dest;
+                    printf("Name: ");
+                    std::cin >> dest;
+                    write_helper(vector2string(std::vector<std::string>({"accept", dest})));
+                }
+                else if(command.substr(0, strlen("/block")).compare("/block") == 0) {
+                    std::string dest;
+                    printf("Name: ");
+                    std::cin >> dest;
+                    write_helper(vector2string(std::vector<std::string>({"block", dest})));
+                }
+                else if(command.substr(0, strlen("/unblock")).compare("/unblock") == 0) {
+                    std::string dest;
+                    printf("Name: ");
+                    std::cin >> dest;
+                    write_helper(vector2string(std::vector<std::string>({"unblock", dest})));
                 }
             }
 
