@@ -426,21 +426,29 @@ void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMs
 }
 
 
-// Get a list of online users who are your friends TODO
-std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg) {
-    std::string query = "SELECT name, username FROM users WHERE online = 1";
+// Get a list of online users who are your friends
+std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg, std::string user) {
+    std::string query = "SELECT username FROM users WHERE online = 1 INTERSECT SELECT * from friends WHERE user1 = '" + user + "' and edge = 0";
     std::vector<std::string> user_vector;
     user_vector.push_back("olusers");
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
     if(result == SQLITE_OK) {
         while (sqlite3_step(selectstmt) == SQLITE_ROW) {
-            std::string name = (char *) sqlite3_column_text(selectstmt, 0);
-            std::string username = (char *) sqlite3_column_text(selectstmt, 1);
-            std::cout << std::endl << "Name : " << name << std::endl;
-            std::cout << "Username : " << username << std::endl << std::endl; 
+            std::string username = (char *) sqlite3_column_text(selectstmt, 0);
             user_vector.push_back(username);
-            user_vector.push_back(name);
+            query = "SELECT name FROM users WHERE username = '" + username + "'";
+            struct sqlite3_stmt *selectstmt_users;
+            int result_users = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt_users, NULL);
+
+            if(result_users == SQLITE_OK)
+            {
+                std::string name = (char*) sqlite3_column_text(selectstmt_users, 0);
+                user_vector.push_back(name);
+            }
+            else
+                user_vector.push_back("");
+            sqlite3_finalize(selectstmt_users);
         }
     }
     sqlite3_finalize(selectstmt);
@@ -468,6 +476,36 @@ std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg) {
     sqlite3_finalize(selectstmt);
     return user_vector;
 }   
+
+
+// Get friends of a particular person
+std::vector<std::string> get_friends(sqlite3* db, char* zErrMsg, std::string username) {
+    std::vector<std::string> friend_vector;
+    friend_vector.push_back("urfriends");
+    std::string query = "SELECT user2 FROM friends WHERE user1 = '" + username + "' and edge = 0";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        while (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            std::string pk = (char *) sqlite3_column_text(selectstmt, 0);
+            friend_vector.push_back(pk);
+            query = "SELECT name FROM users WHERE username = '" + pk + "'";
+            struct sqlite3_stmt *selectstmt_users;
+            int result_users = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt_users, NULL);
+
+            if(result_users == SQLITE_OK)
+            {
+                std::string name = (char*) sqlite3_column_text(selectstmt_users, 0);
+                friend_vector.push_back(name);
+            }
+            else
+                friend_vector.push_back("");
+            sqlite3_finalize(selectstmt_users);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return friend_vector;
+}
 
 
 // Check the relationship between two users in the social graph
@@ -793,7 +831,9 @@ void control_thread() {
                         set_user_online(messageVector[1], sockfd, db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
-                        std::vector<std::string> userlist = get_online_users(db, zErrMsg);
+                        std::vector<std::string> userlist = get_online_users(db, zErrMsg, messageVector[1]);
+                        write_to_socket(sockfd,vector2string(userlist));
+                        userlist = get_friends(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));
                         userlist = get_all_users(db, zErrMsg);
                         write_to_socket(sockfd,vector2string(userlist));
