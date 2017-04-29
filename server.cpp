@@ -478,7 +478,7 @@ int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
     if(result == SQLITE_OK) {
         if(sqlite3_step(selectstmt) == SQLITE_ROW) {
-            return int(sqlite3_column_text(selectstmt, 0));
+            return int(sqlite3_column_int(selectstmt, 0));
         }
         else
             return 3;
@@ -548,7 +548,7 @@ void block(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
     }
     else
     {
-        printf(user1 + " Blocked " + user2);
+        std::cout << user1 + " Blocked " + user2 << std::endl;
     }
 }
 
@@ -575,7 +575,7 @@ void unblock(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
     }
     else
     {
-        printf(user1 + " unblocked " + user2);
+        std::cout << user1 + " unblocked " + user2 << std::endl;
     }
 }
 
@@ -612,7 +612,7 @@ void send_friend_req(sqlite3* db, char* zErrMsg, std::string user1, std::string 
     }
     else
     {
-        printf(user1 + " sent friend request to " + user2);
+        std::cout << user1 + " sent friend request to " + user2 << std::endl;
     }
 }
 
@@ -639,7 +639,7 @@ void accept_friend_req(sqlite3* db, char* zErrMsg, std::string user1, std::strin
     }
     else
     {
-        printf(user1 + " is now friends with " + user2);
+        std::cout << user1 + " is now friends with " + user2 << std::endl;
     }
 }
 
