@@ -179,6 +179,12 @@ void chat::read_thread()
         else if(messageVector[0] == "notblocked") {
             std::cout << messageVector[1] + " was never blocked.";
         }
+        else if(messageVector[0] == "sentreq") {
+            std::cout << "Sent a friend request to " + messageVector[1] << std::endl;
+        }
+        else if(messageVector[0] == "accepted") {
+            std::cout << "You are now friends with " + messageVector[1] << std::endl;
+        }
     }
 }
 

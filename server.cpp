@@ -488,9 +488,8 @@ int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user
 }
 
 
-// Check if user1-user2 pair exists in table friends
-bool check_pair_edge(sqlite3* db, char* zErrMsg, std::string user1, std::string user2)
-{
+// Check if user1-user2 pair exists in table friends. Same as returning 3 by check_friend
+bool check_pair_edge(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
     std::string query = "SELECT * from friends WHERE user1='" + user1 + "' and user2='" + user2 + "'";
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
@@ -515,6 +514,7 @@ bool find_db_username(sqlite3* db, char* zErrMsg, std::string username) {
     }
     return false;
 }
+
 
 // Block users
 void block(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
@@ -552,6 +552,8 @@ void block(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
     }
 }
 
+
+// Unblock user
 void unblock(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
     std::string query = "DELETE from friends WHERE user1 = '" + user1 + "' and user2 = '" + user2 +"'";
 
@@ -577,6 +579,72 @@ void unblock(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
     }
 }
 
+
+// Send Friend Request
+void send_friend_req(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
+    std::string query;
+
+    bool exists = check_pair_edge(db, zErrMsg, user1, user2);
+
+    if(exists)
+        query = "UPDATE friends SET edge = 1 WHERE user1 = '" + user1 + "' and user2 = '" + user2 +"'";
+    else
+        query = "INSERT INTO friends (user1, user2, edge) values ('" + user1 + "', '" + user2 +"', 1)";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+    if(exists)
+        query = "UPDATE friends SET edge = -1 WHERE user1 = '" + user2 + "' and user2 = '" + user1 +"'";
+    else
+        query = "INSERT INTO friends (user1, user2, edge) values ('" + user2 + "', '" + user1 +"', -1)";
+
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+    else
+    {
+        printf(user1 + " sent friend request to " + user2);
+    }
+}
+
+
+// Accept Friend Request
+void accept_friend_req(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
+    std::string query = "UPDATE friends SET edge = 0 WHERE user1 = '" + user1 + "' and user2 = '" + user2 +"'";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+    query = "UPDATE friends SET edge = 0 WHERE user1 = '" + user2 + "' and user2 = '" + user1 +"'";
+
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+    else
+    {
+        printf(user1 + " is now friends with " + user2);
+    }
+}
+
+
+// Reading the user inputs
 void read_thread(int newsockfd) {
     char buffer[256];
     char endOfMessage = '#';
@@ -637,6 +705,8 @@ void read_thread(int newsockfd) {
     }
 }
 
+
+// Writing to users
 void write_to_socket(int newsockfd, std::string data) {
     int n;
     char buffer[256];
@@ -657,18 +727,24 @@ void write_to_socket(int newsockfd, std::string data) {
 
 }
 
+
+// Notify a user if someone comes online
 void online_notify(std::string username) {
     for (int socket : logged_in_sockets) {
         write_to_socket(socket, vector2string(std::vector<std::string>({"online", username})));
     }
 }
 
+
+// Notify a user if someone goes offline
 void offline_notify(std::string username) {
     for (int socket : logged_in_sockets) {
         write_to_socket(socket, vector2string(std::vector<std::string>({"offline", username})));
     }
 }
 
+
+// Lockless queue which replies to the requests from users
 void control_thread() {
     sqlite3 *db;
     char *zErrMsg = 0;
@@ -827,26 +903,21 @@ void control_thread() {
                         else if(find_db_username(db, zErrMsg, messageVector[1])) {
                             // Send friend request
                             send_friend_req(db, zErrMsg, source, messageVector[1]);
-                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"blocked", messageVector[1]})));
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"sentreq", messageVector[1]})));
                         }
                     }
-                    // TODO friend request
                 }
-                else if(messageVector[0] == "accept")
+                else if(messageVector[0] == "accept") // Accept friend request
                 {
                     std::string source;
                     if ((source = get_username(sockfd, db, zErrMsg)) != "") {
                         int check = check_friend(db, zErrMsg, source, messageVector[1]);
-                        if(check == -2) {
-                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
-                        }
-                        else if(find_db_username(db, zErrMsg, messageVector[1])) {
-                            // Block the person
+                        if(check == -1) {
+                            // Accept Friend Request
                             accept_friend_req(db, zErrMsg, source, messageVector[1]);
-                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"blocked", messageVector[1]})));
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"accepted", messageVector[1]})));
                         }
                     }
-                    // TODO Accept request
                 }
 
                 auto temp = head->next;
@@ -857,6 +928,8 @@ void control_thread() {
     }
 }
 
+
+// The Main Function - Established connections, runs threads
 int main(int argc, char *argv[])
 {
     if(sodium_init() == -1 ) { // Hashing library initialization
