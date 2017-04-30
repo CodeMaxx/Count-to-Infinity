@@ -126,7 +126,7 @@ void error(const char *msg) {
 }
 
 
-// Login users
+// Login users TODO Update time stamp when logging in
 std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg) {
     std::string username = vec_login[1];
 
