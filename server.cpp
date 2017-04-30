@@ -444,6 +444,25 @@ int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user
 }
 
 
+// Get chat_id for chat between two users
+int get_chat_id(sqlite3* db, char* zErrMsg, std::string receiver, std::string sender) {
+    std::string query = "SELECT a.chat_id FROM chats as a, chats_users_xref as x "
+                                "where a.chat_id=x.chat_id and x.username = "
+                                "'" + sender + "' and ""a.chat_id in (select "
+                                "a.chat_id from chats as a, chats_users_xref as x"
+                                "where a.chat_id=x.chat_id and x.username = '" + receiver + "')";
+    struct sqlite3_stmt *selectstmt;
+    int chat_id;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
+            chat_id = sqlite3_column_int(selectstmt, 0);
+        }
+    }
+    return chat_id;
+}
+
+
 // Get name from username
 std::string get_name(sqlite3* db, char* zErrMsg, std::string username) {
     std::string query = "SELECT name FROM users WHERE username = '" + username + "'";
@@ -693,6 +712,72 @@ void accept_friend_req(sqlite3* db, char* zErrMsg, std::string user1, std::strin
     {
         std::cout << user1 + " is now friends with " + user2 << std::endl;
     }
+
+    query = "INSERT INTO chats(chat_name) values ('" + user1 + "')"; // Just randomly adding name for individual chat
+                                                                    // Name is really required for group chat only
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+    int id = sqlite3_last_insert_rowid(db);
+
+    query = "INSERT INTO chats_users_xref(username, chat_id) values ('" + user2 + "'," + std::to_string(id) + ")";
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+    query = "INSERT INTO chats_users_xref(username, chat_id) values ('" + user1 + "'," + std::to_string(id) + ")";
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+}
+
+
+// Add message to database and chat
+void add_message_to_database(sqlite3* db, char* zErrMsg, std::string message, std::string receiver, std::string sender) {
+    int chat_id = get_chat_id(db, zErrMsg, receiver, sender);
+    std:: string query = "INSERT INTO messages(message_text, message_owner, chat_id) values ("
+                    "'" + message + "','" + sender + "'," + std::to_string(chat_id) + ")";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+}
+
+
+// Retrieve messages for a chat
+std::vector<std::string> retrieve_messages(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
+    std::vector<std::string> message_vector;
+    message_vector.push_back("all_messages");
+    int chat_id = get_chat_id(db, zErrMsg, user1, user2);
+
+    std::string query = "SELECT message_text, message_owner FROM messages where "
+                                "chat_id =" + std::to_string(chat_id) + " ORDER BY message_id";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        while (sqlite3_step(selectstmt) == SQLITE_ROW) {
+            std::string message = (char *) sqlite3_column_text(selectstmt, 0);
+            std::string owner = (char*) sqlite3_column_text(selectstmt, 1);
+            message_vector.push_back(owner);
+            message_vector.push_back(message);
+        }
+    }
+    sqlite3_finalize(selectstmt);
+    return message_vector;
 }
 
 
@@ -895,8 +980,11 @@ void control_thread() {
                             write_to_socket(sockfd, vector2string(std::vector<std::string>({"notacreq", messageVector[1]})));
                         }
                         else if((destsockfd = get_socket(messageVector[1], db, zErrMsg)) != 0) {
+                            // TODO update this for group chat
+                            add_message_to_database(db, zErrMsg, messageVector[2], messageVector[1], source);
                             messageVector[1] = source;
                             std::cout << vector2string(messageVector) << std::endl;
+
                             write_to_socket(destsockfd, vector2string(messageVector));
                         }
                         else {
@@ -988,7 +1076,7 @@ void control_thread() {
     }
 }
 
-
+// TODO turn this all into a class
 // The Main Function - Established connections, runs threads
 int main(int argc, char *argv[]) {
     if(sodium_init() == -1 ) { // Hashing library initialization

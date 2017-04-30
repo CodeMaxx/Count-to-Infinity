@@ -250,9 +250,7 @@ void chat::write_thread()
                     message.push_back(name);
                     message.push_back(password);
 
-                    write_helper(vector2string(message)); // Ideally we should get a "Username already exists error here"
-                    // but due to threads it is a problem. Maybe we should make
-                    // threads variables public and then synchronise somehow.
+                    write_helper(vector2string(message));
                 }
                 else if(command.substr(0, strlen("/login")).compare("/login") == 0){
                     std::string username, password;
