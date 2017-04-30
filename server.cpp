@@ -768,6 +768,7 @@ void add_message_to_database(sqlite3* db, char* zErrMsg, std::string message, st
 std::vector<std::string> retrieve_messages(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
     std::vector<std::string> message_vector;
     message_vector.push_back("all_messages");
+    message_vector.push_back(user2);
     int chat_id = get_chat_id(db, zErrMsg, user1, user2);
 
     std::string query = "SELECT message_text, message_owner FROM messages where "
@@ -1073,7 +1074,17 @@ void control_thread() {
                         }
                     }
                 }
-
+                else if(messageVector[0] == "getmessages") // Get all messages for a user
+                {
+                    std::string source;
+                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
+                        if(check == -1) {
+                            std::vector<std::string> messages = retrieve_messages(db, zErrMsg, source, messageVector[1]);
+                            write_to_socket(sockfd, vector2string(messages));
+                        }
+                    }
+                }
                 auto temp = head->next;
                 delete head;
                 head = head->next;   
