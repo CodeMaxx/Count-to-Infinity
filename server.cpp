@@ -126,7 +126,24 @@ void error(const char *msg) {
 }
 
 
-// Login users TODO Update time stamp when logging in
+// Get current time
+std::string get_current_time() {
+    time_t currentTime;
+    struct tm *localTime;
+
+    time( &currentTime );                   // Get the current time
+    localTime = localtime( &currentTime );  // Convert the current time to the local time
+
+    int Day    = localTime->tm_mday;
+    int Month  = localTime->tm_mon + 1;
+    int Year   = localTime->tm_year + 1900;
+    int Hour   = localTime->tm_hour;
+    int Min    = localTime->tm_min;
+    return std::to_string(Day) + " " + std::to_string(Month) + " " + std::to_string(Year) + " " + std::to_string(Hour) + " " + std::to_string(Min);
+}
+
+
+// Login users
 std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zErrMsg) {
     std::string username = vec_login[1];
 
@@ -151,18 +168,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
                 str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
 
                 //lastseen
-                time_t currentTime;
-                struct tm *localTime;
-
-                time( &currentTime );                   // Get the current time
-                localTime = localtime( &currentTime );  // Convert the current time to the local time
-
-                int Day    = localTime->tm_mday;
-                int Month  = localTime->tm_mon + 1;
-                int Year   = localTime->tm_year + 1900;
-                int Hour   = localTime->tm_hour;
-                int Min    = localTime->tm_min;
-                str = str + "'" + std::to_string(Day) + " " + std::to_string(Month) + " " + std::to_string(Year) + " " + std::to_string(Hour) + " " + std::to_string(Min) + "'" + ", ";
+                str = str + "'" + get_current_time() + "'" + ", ";
                 //online
                 str = str + "0" + ");";
 
@@ -202,7 +208,7 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
             std::string salt_table = (char*)sqlite3_column_text(selectstmt, 1);
             std::string name_table = (char*)sqlite3_column_text(selectstmt, 2);
             std::string password_input = vec_login[2];
-            bool temp_bool =check_password(password_input, password_table, salt_table);
+            bool temp_bool = check_password(password_input, password_table, salt_table);
 
            if(temp_bool)
            {
@@ -392,8 +398,8 @@ int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
 // Set the user's offline bit to 1
 void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
     logged_in_sockets.erase(sockfd);
-    std::string query = "UPDATE users " \
-                    "SET online = 0, socket = 0 " \
+    std::string query = "UPDATE users "
+                    "SET online = 0, socket = 0, last_seen='" + get_current_time() + "' "
                     "WHERE username = '" + username + "'";
 
     int rc;
@@ -899,7 +905,7 @@ void control_thread() {
 
 
     while(true) {
-        sleep(1);
+//        sleep(1);
         if(!control_thread_queue.isEmpty()) { 
             auto head = control_thread_queue.consume_all();
             while(head) {
