@@ -23,7 +23,7 @@ void chat::print_online_users() {
 
 void chat::initialise_database(std::vector<std::string> msg) {
     msg.erase(msg.begin());
-    for (int i = 0; i != msg.size(); i++) {
+    for (int i = 0; i != msg.size();) {
         std::string username, name, lastOnline;
         bool isOnline;
         int friendIndicator;
@@ -31,6 +31,7 @@ void chat::initialise_database(std::vector<std::string> msg) {
         i++;
         name = msg[i];
         i++;
+        printf("%s\n", msg[i].c_str());
         friendIndicator = stoi(msg[i]);
         i++;
         if(friendIndicator == 0) {
@@ -88,20 +89,13 @@ void chat::update_offline(std::vector<std::string> msg){
     if(id->friendIndicator == 0){ // friends
         id->isOnline = false;
         id->lastOnline = last_seen;
-        online.erase(id);
-    }
-}
-
-void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vector when first connection is made
-{
-    msg.erase(msg.begin());
-    identity id;
-
-    for (auto i = msg.begin(); i != msg.end(); i++) {
-        id.username = *i;
-        i++;
-        id.name = *i;
-                all.push_back(id);
+        auto pos = online.begin();
+        for (;pos != online.end(); pos++) {
+            if(*pos == id) {
+                break;
+            }
+        }
+        online.erase(pos);
     }
 }
 
