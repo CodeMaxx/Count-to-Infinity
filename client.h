@@ -16,26 +16,12 @@
 #include "identity.cpp"
 class chat
 {
-    struct history
-    {
-        struct message // Stores a messages and corresponding reply
-        {
-            std::string msg;
-            bool mine; // = 1 if message is mine else 0
-        };
-
-        struct frnd // History of one friend
-        {
-            identity id;
-            std::vector<message> messages;
-        };
-
-        std::unordered_map<std::string, frnd> user_to_frnd; // Convert username to index for faster access of history
-    };
+    
 public:
 
     // TODO : Make these vectors of identity, vectors of identity so that when one is changed, 
     // it reflects the status all across the database 
+    std::unordered_map<std::string, std::vector<message> > group_messages; // key: group name
     std::vector<identity*> online; // Vector containing username of online friends
     std::vector<identity*> friends; // Vector containing username of all friends
     std::vector<identity*> all; // Vector containing list of all friends
@@ -44,7 +30,6 @@ public:
     
     std::thread read_th;
     std::thread write_th;
-    history hist; // Contains history of current session
     identity id; // Identity of the client
 
     int portno; // Port Number of the server
@@ -69,6 +54,10 @@ public:
 
     void updateFriendRequests(std::vector<std::string> msg); // Someone sent a friend request to this person, so update friend
     void blockedYou(std::vector<std::string> msg); // someone blocked you, so you just remove him from all the lists/maps
+    void all_group_messages(std::vector<std::string> msg);  // _ group name  (username message)
+    void all_messages(std::vector<std::string> msg);    // _ username  (username message)
+    void add_message(std::vector<std::string> msg); // /message username message 
+    //void add_group_message(std::vector<std::string> msg);
 
     void print_all_users();
     void print_online_users();

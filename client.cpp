@@ -117,6 +117,75 @@ void chat::error(const char *msg)
     exit(0);
 }
 
+void chat::updateFriendRequests(std::vector<std::string> msg){
+    std::string username = msg[1];
+    identity *id = username2identity[username];
+    id->friendIndicator = 1;
+    friendRequests.push_back(id);
+}
+
+void remove_from_list(std::vector<identity*> list, identity* id){
+   auto pos = list.begin();
+    for (;pos != list.end(); pos++) {
+        if(*pos == id) {
+            break;
+        }
+    }
+    list.erase(pos);
+}
+
+void chat::blockedYou(std::vector<std::string> msg){
+    std::string username = msg[1];
+    identity *id = username2identity[username];
+    remove_from_list(all, id);
+    remove_from_list(online, id);
+    remove_from_list(friends, id);
+    remove_from_list(friendRequests, id);
+    username2identity.erase(username);
+    delete id;
+}
+
+void chat::all_group_messages(std::vector<std::string> msg){ 
+    std::string curr_username = msg[1];
+
+    for(int i = 2; i < msg.size();){
+        std::string group_name = msg[i];
+        i++;
+        std::string message_recv = msg[i];
+        i++;
+        message curr_msg;
+        curr_msg.msg = message_recv;
+        curr_msg.username = group_name;
+        group_messages[group_name].push_back(curr_msg);
+    }
+}
+
+void chat::all_messages(std::vector<std::string> msg){ 
+    std::string curr_username = msg[1];
+    identity* id = username2identity[curr_username];
+
+    for(int i = 2; i < msg.size();){
+        std::string from_username = msg[i];
+        i++;
+        std::string message_recv = msg[i];
+        i++;
+        message curr_msg;     
+        curr_msg.msg = message_recv;
+        curr_msg.username = from_username;
+        (id->messages).push_back(curr_msg);
+    }
+}
+
+void chat::add_message(std::vector<std::string> msg){
+    std::string username = msg[1];
+    identity* id = username2identity[username];
+    std::string new_msg = msg[2];
+    message new_message;
+    new_message.msg = new_msg;
+    new_message.username = username;
+    (id->messages).push_back(new_message);
+}
+
 void chat::write_helper(std::string str_buffer){ // Define this
     int n;
     char *buffer = new char[str_buffer.length() + 1];
