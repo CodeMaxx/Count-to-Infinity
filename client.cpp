@@ -9,7 +9,7 @@ void chat::print_all_users() {
     std::cout << "List of ALL users: " << std::endl;
     std::cout << "Name \t username" << std::endl;
     for (auto x : all) {
-        std::cout << x.name << " \t "  << x.username << std::endl;
+        std::cout << x->name << " \t "  << x->username << std::endl;
     }
 }
 
@@ -17,49 +17,57 @@ void chat::print_online_users() {
     std::cout << "List of Online users: " << std::endl;
     std::cout << "Name \t username" << std::endl;
     for (auto x : online) {
-        std::cout << x.name << " \t "  << x.username << std::endl;
+        std::cout << x->name << " \t "  << x->username << std::endl;
     }
 }
 
-void chat::initialise_online(std::vector<std::string> msg) {
+void chat::initialise_database(std::vector<std::string> msg) {
     msg.erase(msg.begin());
-    identity id;
-
-    for (auto i = msg.begin(); i != msg.end(); i++) {
-        id.username = *i;
+    for (int i = 0; i != msg.size(); i++) {
+        std::string username, name, lastOnline;
+        bool isOnline;
+        int friendIndicator;
+        username = msg[i];
         i++;
-        id.name = *i;
-        online.push_back(id);
+        name = msg[i];
+        i++;
+        friendIndicator = stoi(msg[i]);
+        i++;
+        if(friendIndicator == 0) {
+            lastOnline = msg[i];
+            i++;
+            isOnline = (bool) stoi(msg[i]);
+            i++;
+        }
+        else {
+            lastOnline = "";
+            isOnline = false;
+        }
+        identity *person = new identity(username, name, lastOnline, friendIndicator, isOnline);
+        if(isOnline) {
+            online.push_back(person);
+        }
+        if(friendIndicator == 0) {
+            friends.push_back(person);
+        }
+        if(friendIndicator == -1) {
+            friends.push_back(person);
+        }
+        username2identity[username] = person;
     }
 }
 
-void chat::update_online(std::vector<std::string> msg) // Update vector containing which people are online
-{
-    identity id;
-    id.username = msg[1];
-    id.name = msg[2];
-    online.push_back(id);
+std::vector<identity*> chat::getOnlineusers() {
+    return online;
 }
-
-void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vector when first connection is made
-{
-    msg.erase(msg.begin());
-    identity id;
-
-    for (auto i = msg.begin(); i != msg.end(); i++) {
-        id.username = *i;
-        i++;
-        id.name = *i;
-        all.push_back(id);
-    }
+std::vector<identity*> chat::getFriends() {
+    return friends;
 }
-
-void chat::update_all(std::vector<std::string> msg)
-{
-    identity id;
-    id.username = msg[1];
-    id.name = msg[2];
-    all.push_back(id);
+std::vector<identity*> chat::getAllUsers() {
+    return all;
+}
+std::vector<identity*> chat::getFriendRequests() {
+    return friendRequests;
 }
 
 void chat::error(const char *msg)
@@ -120,20 +128,23 @@ void chat::read_thread()
             printf("You have logged out\n" );
             loggedin = false;
         }
-        else if(messageVector[0] == "olusers") {
+        // else if(messageVector[0] == "olusers") {
             // initialise_online(messageVector);
-        }
+        // }
         else if(messageVector[0] == "users") {
-            // initialise_all(messageVector);
+            initialise_database(messageVector);
         }
         else if(messageVector[0] == "online") {
             std::cout << messageVector[1] << " came online now" << std::endl; 
+            update_online(messageVector);
         }
         else if(messageVector[0] == "offline") {
             std::cout << messageVector[1] << " went offline" << std::endl; 
+
         }
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
+            // update_message();
         }
         else if(messageVector[0] == "sendreq"){
             std:: cout << "You need to send a friend request to " + messageVector[1] + " first" << std::endl;
@@ -149,9 +160,11 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "ublock") {
             std::cout << "You have blocked " + messageVector[1] + ". Type /unblock " + messageVector[1] + " to unblock and start chatting.";
+            
         }
         else if(messageVector[0] == "blocked") {
             std::cout << messageVector[1] + " has been blocked. You will not be able to reach him/her anymore. Use /unblock to unblock" << std::endl;
+            
         }
         else if(messageVector[0] == "unblocked") {
             std::cout << "Unblocked " + messageVector[1] << std::endl;
@@ -176,14 +189,18 @@ void chat::read_thread()
 
 void chat::print_help() {
     printf("/help - To get help\n");
-    printf("/register [username] [Name] [Password] - To start registration process\n");
+    printf("/register - To start registration process\n");
     printf("/login [username] [password]\n");
     printf("/chat [Friend's Username] - To chat with a friend\n");
-    printf("/showall - Show all registered users\n");
-    printf("/showOnline - Show all online users\n");
+    printf("/showall - Lists all registered users\n");
+    printf("/showFriends - Lists your friends\n");
+    printf("/showOnline - Lists all online users\n");
+    printf("/befriend [username] - Send a friend request to [username] \n");
+    printf("/block [username] - Blocks [username] \n");
+    printf("/unblock [username] - Unblocks [username] \n");
     printf("/logout - To logout and quit\n");
     printf("/sendfile - To send file to friend\n");
-    printf("/setStatus - Set a status for yourself");
+    printf("/setStatus - Set a status for yourself \n");
 }
 
 void chat::write_thread()
@@ -267,25 +284,25 @@ void chat::write_thread()
                 }
                 else if(command.substr(0, strlen("/friend")).compare("/friend") == 0) {
                     std::string dest;
-                    printf("Name: ");
+                    printf("Username: ");
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"friend", dest})));
                 }
                 else if(command.substr(0, strlen("/accept")).compare("/accept") == 0) {
                     std::string dest;
-                    printf("Name: ");
+                    printf("Username: ");
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"accept", dest})));
                 }
                 else if(command.substr(0, strlen("/block")).compare("/block") == 0) {
                     std::string dest;
-                    printf("Name: ");
+                    printf("Username: ");
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"block", dest})));
                 }
                 else if(command.substr(0, strlen("/unblock")).compare("/unblock") == 0) {
                     std::string dest;
-                    printf("Name: ");
+                    printf("Username: ");
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"unblock", dest})));
                 }
