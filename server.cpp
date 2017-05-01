@@ -945,7 +945,7 @@ void control_thread() {
                         set_user_online(messageVector[1], sockfd, db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
-                        std::vector<std::string> online_friends = get_online_users(db, zErrMsg, messageVector[1]);
+                        std::vector<std::string> userlist = get_online_users(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));
                         std::vector<std::string> friends = get_friends(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));

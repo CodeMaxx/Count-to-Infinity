@@ -155,11 +155,23 @@ void chat::error(const char *msg)
     exit(0);
 }
 
+void chat::update_friend(std::vector<std::string> msg){
+    std::string username = msg[1];
+    identity* id_fr = username2identity[username];
+    id_fr->friendIndicator = 0;
+    //id->friendIndicator = 0;
+    friends.push_back(id_fr);
+    if(id_fr->isOnline){
+        online.push_back(id_fr);
+    }
+
+}
+
 void chat::updateFriendRequests(std::vector<std::string> msg){
     std::string username = msg[1];
-    identity *id = username2identity[username];
-    id->friendIndicator = 1;
-    friendRequests.push_back(id);
+    identity *id1 = username2identity[username];
+    id1->friendIndicator = 1;
+    friendRequests.push_back(id1);
 }
 
 void remove_from_list(std::vector<identity*> list, identity* id){

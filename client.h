@@ -24,7 +24,7 @@ public:
     std::unordered_map<std::string, std::vector<message> > group_messages; // key: group name
     std::vector<identity*> online; // Vector containing username of online friends
     std::vector<identity*> friends; // Vector containing username of all friends
-    std::vector<identity*> all; // Vector containing list of all friends
+    std::vector<identity*> all; // Vector containing username of all users who have not blocked this person
     std::vector<identity*> friendRequests; // Vector containing people who sent this person friendRequest
     std::unordered_map<std::string, identity*> username2identity; // username to *identity hash map
     
