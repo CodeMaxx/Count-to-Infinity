@@ -995,7 +995,7 @@ void control_thread() {
                             write_to_socket(destsockfd, vector2string(messageVector));
                         }
                         else {
-                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"nfound"})));
+                            add_message_to_database(db, zErrMsg, messageVector[2], messageVector[1], source);
                         }
                     }
                     else {
