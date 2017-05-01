@@ -74,18 +74,18 @@ public:
 
     const char escape_char = '\\'; // Escape character for escaping separators in client messages
 
+    void initialise_online(std::vector<std::string> msg); // Initially add all people who are online
+    void initialise_all(std::vector<std::string> msg); // Add all people part of the network
     void initialise_database(); // Initializes the database once `all` is filled
 
     std::vector<identity> getOnlineusers(); 
     std::vector<identity> getFriends();
     std::vector<identity> getAllUsers();
     std::vector<identity> getFriendRequests();
-
-    void initialise_online(std::vector<std::string> msg); // Initially add all people who are online
     void update_online(std::vector<std::string> msg); // Add a person if he comes online
-    void initialise_all(std::vector<std::string> msg); // Add all people part of the network
     void update_all(std::vector<std::string> msg); // Add if a new person joins the network
-    void updateFriendRequests(std::vector<std::string> v); // Someone sent a friend request to this person
+    void updateFriendRequests(std::vector<std::string> msg); // Someone sent a friend request to this person, so update friend
+    void blockedYou(std::vector<std::string> msg); // someone blocked you, so you just remove him from all the lists/maps
 
     void print_all_users();
     void print_online_users();
