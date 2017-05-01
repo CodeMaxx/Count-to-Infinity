@@ -61,6 +61,8 @@ public:
 
     void print_all_users();
     void print_online_users();
+    void print_friends(); 
+    void print_friend_requests(); 
 
     void connect_to_server(char* server_name, int port_num);
     void start_chat();
