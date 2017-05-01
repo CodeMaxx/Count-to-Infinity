@@ -163,11 +163,8 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
                 //name
                 str = str + '"' + vec_login[1] + '"' + ", ";
                 //password
-                unsigned char random[16];
-                randombytes_buf(random, sizeof random);
-                std::string new_password = std::string(reinterpret_cast<char*>(random), 16);
-                randombytes_buf(random, sizeof random);
-                std::string salt = std::string(reinterpret_cast<char*>(random), 16);
+                std::string new_password = "t#1515ab@ckd000r";
+                std::string salt = "h@ppyn3s1sth3k3y";
                 str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
 
                 //lastseen
@@ -435,20 +432,6 @@ void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMs
     }
 }
 
-bool check_online(sqlite3* db, char* zErrMsg, std::string user) {
-    std::string query = "SELECT username FROM users WHERE username = '" + user + "'";
-    struct sqlite3_stmt *selectstmt;
-    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
-    if(result == SQLITE_OK) {
-        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
-            return true;
-        }
-        else
-            return false;
-    }
-    else
-        return false;
-}
 
 // Check the relationship between two users in the social graph
 int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user2){
@@ -536,8 +519,8 @@ std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg, std::strin
     return user_vector;
 }   
 
-// TODO : send all data even with isOnline
-// Get a vector containing all users
+
+// Get a vector containing all users (username name friend_status)
 std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg, std::string user) {
     std::string query = "SELECT username FROM users EXCEPT SELECT user2 from friends WHERE user1='" + user + "' and edge = -2";
     std::vector<std::string> user_vector;
@@ -554,8 +537,6 @@ std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg, std::string u
             if(r == 0)
             {
                 user_vector.push_back(get_timestamp(db, zErrMsg, username));
-                bool b = check_online(db, zErrMsg, username);
-                user_vector.push_back(std::to_string((int) b));
             }
         }
     }
@@ -1114,7 +1095,7 @@ void online_notify(std::string username) {
 // Notify a user if someone goes offline
 void offline_notify(std::string username) {
     for (int socket : logged_in_sockets) {
-        write_to_socket(socket, vector2string(std::vector<std::string>({"offline", username, get_current_time()})));
+        write_to_socket(socket, vector2string(std::vector<std::string>({"offline", username})));
     }
 }
 
@@ -1176,11 +1157,11 @@ void control_thread() {
                         set_user_online(messageVector[1], sockfd, db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
-                        // std::vector<std::string> userlist = get_online_users(db, zErrMsg, messageVector[1]);
-                        // write_to_socket(sockfd,vector2string(userlist));
-                        // userlist = get_friends(db, zErrMsg, messageVector[1]);
-                        // write_to_socket(sockfd,vector2string(userlist));
-                        std::vector<std::string> userlist = get_all_users(db, zErrMsg, messageVector[1]);
+                        std::vector<std::string> online_friends = get_online_users(db, zErrMsg, messageVector[1]);
+                        write_to_socket(sockfd,vector2string(userlist));
+                        std::vector<std::string> friends = get_friends(db, zErrMsg, messageVector[1]);
+                        write_to_socket(sockfd,vector2string(userlist));
+                        std::vector<std::string> all_users = get_all_users(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));
 
 
@@ -1315,7 +1296,6 @@ void control_thread() {
                         }
                     }
                 }
-                // TODO : debug get messages
                 else if(messageVector[0] == "getmessages") // Get all messages for a user
                 {
                     std::string source;

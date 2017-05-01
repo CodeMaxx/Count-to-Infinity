@@ -1,3 +1,10 @@
+struct message // Stores a messages and corresponding reply
+{
+    std::string msg;
+    std::string username; // username of person who sent the message
+};
+
+
 struct identity
 {
     std::string username; // Username
@@ -5,6 +12,7 @@ struct identity
     std::string lastOnline; // timestamp of when someone logged out
     bool isOnline; // is this person online
     int friendIndicator; // what's the relation with this person?
+    std::vector<message> messages;
 
     identity()
     {
@@ -18,3 +26,4 @@ struct identity
         this->isOnline = isOnline;
     }
 };
+
