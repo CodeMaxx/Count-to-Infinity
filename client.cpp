@@ -6,18 +6,56 @@
 // int chat::sockfd = 0;
 
 void chat::print_all_users() {
-    std::cout << "List of ALL users: " << std::endl;
-    std::cout << "Name \t username" << std::endl;
-    for (auto x : all) {
-        std::cout << x->name << " \t "  << x->username << std::endl;
+    if(all.size() > 0) {
+        std::cout << "List of ALL users: " << std::endl;
+        std::cout << "Username \t Name" << std::endl;
+        for (auto x : all) {
+            std::cout << x->username << " \t "  << x->name << std::endl;
+        }
+    }
+    else {
+        std::cout << "There are no users " << std::endl;
+        std::cout << "It's so lonely, call over other people onto this cli rtm" << std::endl;
     }
 }
 
 void chat::print_online_users() {
-    std::cout << "List of Online users: " << std::endl;
-    std::cout << "Name \t username" << std::endl;
-    for (auto x : online) {
-        std::cout << x->name << " \t "  << x->username << std::endl;
+    if(online.size() > 0) {    
+        std::cout << "List of Online users: " << std::endl;
+        std::cout << "Username \t Name" << std::endl;
+        for (auto x : online) {
+            std::cout << x->username << " \t "  << x->name << std::endl;
+        }
+    }
+    else {
+        std::cout << "I guess there are no users online now" << std::endl;
+    }
+}
+
+void chat::print_friends() {
+    if(friends.size() > 0) {
+        std::cout << "List of Friends: " << std::endl;
+        std::cout << "Username \t Name" << std::endl;
+        for (auto x : friends) {
+            std::cout << x->username << " \t "  << x->name << std::endl;
+        }
+    }
+    else {
+        std::cout << "You have no friends" << std::endl;
+        std::cout << "Oh! so lonely. Send request to random people if you will" << std::endl;
+    }
+}
+
+void chat::print_friend_requests() {
+    if(friendRequests.size() > 0) {
+        std::cout << "List of friend requests: " << std::endl;
+        std::cout << "Username \t Name" << std::endl;
+        for (auto x : friendRequests) {
+            std::cout << x->username << " \t "  << x->name << std::endl;
+        }   
+    }
+    else {
+        std::cout << "Sorry, but no friend requests yet" << std::endl;
     }
 }
 
@@ -31,7 +69,6 @@ void chat::initialise_database(std::vector<std::string> msg) {
         i++;
         name = msg[i];
         i++;
-        printf("%s\n", msg[i].c_str());
         friendIndicator = stoi(msg[i]);
         i++;
         if(friendIndicator == 0) {
@@ -54,6 +91,7 @@ void chat::initialise_database(std::vector<std::string> msg) {
         if(friendIndicator == -1) {
             friends.push_back(person);
         }
+        all.push_back(person);
         username2identity[username] = person;
     }
 }
@@ -169,8 +207,6 @@ void chat::read_thread()
             printf("You have logged out\n" );
             loggedin = false;
         }
-
-
         else if(messageVector[0] == "users") {
             initialise_database(messageVector);
         }
@@ -233,8 +269,10 @@ void chat::print_help() {
     printf("/chat [Friend's Username] - To chat with a friend\n");
     printf("/showall - Lists all registered users\n");
     printf("/showFriends - Lists your friends\n");
+    printf("/showFR (or) /showFriendRequests0 - Lists your friends\n");
     printf("/showOnline - Lists all online users\n");
-    printf("/befriend [username] - Send a friend request to [username] \n");
+    printf("/friend [username] - Send a friend request to [username] \n");
+    printf("/accept [username] - Accepts the friend request from [username] \n");
     printf("/block [username] - Blocks [username] \n");
     printf("/unblock [username] - Unblocks [username] \n");
     printf("/logout - To logout and quit\n");
@@ -314,6 +352,12 @@ void chat::write_thread()
                 }
                 else if(command.substr(0, strlen("/showOnline")).compare("/showOnline") == 0){
                     print_online_users();
+                }
+                else if(command.substr(0, strlen("/showFriendRequests")).compare("/showFriendRequests") == 0 || command.substr(0, strlen("/showFR")).compare("/showFR") == 0) {
+                    print_friend_requests();
+                }
+                else if(command.substr(0, strlen("/showFriends")).compare("/showFriends") == 0) {
+                    print_friends();
                 }
                 else if(command.substr(0, strlen("/logout")).compare("/logout") == 0){
                     write_helper(vector2string(std::vector<std::string>({"logout"})));

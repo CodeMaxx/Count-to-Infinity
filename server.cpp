@@ -280,7 +280,6 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg) 
     }
 
     std::string temp1 = "Select * from users where username = '" + vec_reg[1] +"'";
-    std::cout << temp1.c_str() << std::endl;
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, temp1.c_str(), -1, &selectstmt, NULL);
     if(result == SQLITE_OK)
@@ -305,7 +304,7 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg) 
             std::string salt = temp.second;
             // std::string new_password = "madhav";
             // std::string salt = "madhav";
-            str = str + '"' + new_password + '"' + ", " + '"' + salt + '"' + ", ";
+            str = str + "'" + new_password + "'" + ", " + "'" + salt + "'" + ", ";
 
             //lastseen
             time_t currentTime;
@@ -323,10 +322,12 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg) 
             //online
             str = str + "0" + ");";
 
+
             /* Create SQL statement */
             std::string temp2 = "INSERT INTO users (username,name,password,salt,last_seen,online) "  \
                  "VALUES " + str;
 
+                 std::cout << temp2 << std::endl;
             /* Execute SQL statement */
             int rc;
             rc = sqlite3_exec(db, temp2.c_str(), callback, 0, &zErrMsg);
