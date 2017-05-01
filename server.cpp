@@ -1079,7 +1079,7 @@ void control_thread() {
                     std::string source;
                     if ((source = get_username(sockfd, db, zErrMsg)) != "") {
                         int check = check_friend(db, zErrMsg, source, messageVector[1]);
-                        if(check == -1) {
+                        if(check == 0) {
                             std::vector<std::string> messages = retrieve_messages(db, zErrMsg, source, messageVector[1]);
                             write_to_socket(sockfd, vector2string(messages));
                         }
@@ -1087,7 +1087,7 @@ void control_thread() {
                 }
                 auto temp = head->next;
                 delete head;
-                head = head->next;   
+                head = head->next;
             }
         }
     }
