@@ -397,7 +397,6 @@ int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
 
 // Set the user's offline bit to 1
 void set_user_offline(std::string username, int sockfd, sqlite3* db, char* zErrMsg) {
-    logged_in_sockets.erase(sockfd);
     std::string query = "UPDATE users "
                     "SET online = 0, socket = 0, last_seen='" + get_current_time() + "' "
                     "WHERE username = '" + username + "'";
@@ -956,8 +955,9 @@ void control_thread() {
                 else if (messageVector[0] == "closed" or messageVector[0] == "logout") {
                     std::string source;
                     if((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        logged_in_sockets.erase(sockfd);
+                        offline_notify(get_username(sockfd, db, zErrMsg));
                         set_user_offline(source, sockfd, db, zErrMsg);
-                        offline_notify(messageVector[1]);
                         if(messageVector[0] == "logout") {
                             write_to_socket(sockfd, vector2string(messageVector));
                         }
