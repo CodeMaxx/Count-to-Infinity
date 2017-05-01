@@ -89,7 +89,7 @@ void chat::initialise_database(std::vector<std::string> msg) {
             friends.push_back(person);
         }
         if(friendIndicator == -1) {
-            friends.push_back(person);
+            friendRequests.push_back(person);
         }
         all.push_back(person);
         username2identity[username] = person;
@@ -336,6 +336,7 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "accepted") {
             std::cout << "You are now friends with " + messageVector[1] << std::endl;
+
         }
         else if(messageVector[0] == "acceptedyour") {
             std::cout << messageVector[1] + " accepted your friend request" << std::endl;
@@ -344,19 +345,33 @@ void chat::read_thread()
 }
 
 void chat::print_help() {
+    printf("-----> General <----- \n"); 
     printf("/help - To get help\n");
     printf("/register - To start registration process\n");
     printf("/login [username] [password]\n");
+    printf("/logout - To logout and quit\n");
+    
+    printf("-----> Chat (one - one) <----- \n"); 
     printf("/chat [Friend's Username] - To chat with a friend\n");
     printf("/showall - Lists all registered users\n");
+    printf("/showOnline - Lists all online users\n");
     printf("/showFriends - Lists your friends\n");
     printf("/showFR (or) /showFriendRequests0 - Lists your friends\n");
-    printf("/showOnline - Lists all online users\n");
+
+    printf("-----> Groups <----- \n"); 
+    printf("/showgroups - Lists all groups you are in \n");
+    printf("/creategroup [username(s)] - Creates a group containing [username(s)] \n");
+    printf("/groupchat - Lists all online users \n");
+    printf("/leavegroup - Leave the group \n");
+
+    printf("-----> Friend Requests / Blocking <----- \n"); 
     printf("/friend [username] - Send a friend request to [username] \n");
     printf("/accept [username] - Accepts the friend request from [username] \n");
     printf("/block [username] - Blocks [username] \n");
     printf("/unblock [username] - Unblocks [username] \n");
-    printf("/logout - To logout and quit\n");
+    
+
+    printf("-----> Misc <----- \n"); 
     printf("/sendfile - To send file to friend\n");
     printf("/setStatus - Set a status for yourself \n");
 }
@@ -366,6 +381,7 @@ void chat::write_thread()
     int n;
     char buffer[256];
 
+    bool isGroup = false;
     std::string dest_username;
 
     while(1)
@@ -423,6 +439,7 @@ void chat::write_thread()
             }
             else {
                 if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
+                    isGroup = false;
                     printf("Friend's username: ");
                     getline(std::cin, dest_username);
                     // check if dest_username is valid?
@@ -470,6 +487,27 @@ void chat::write_thread()
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"unblock", dest})));
                 }
+                else if(command.substr(0, strlen("/unblock")).compare("/unblock") == 0) {
+
+                }
+                else if(command.substr(0, strlen("/creategroup")).compare("/creategroup") == 0) {
+
+                }
+                else if(command.substr(0, strlen("/groupchat")).compare("/groupchat") == 0) {
+                    std::string dest;
+                    printf("Group name: ");
+                    std::cin >> dest;
+                    dest_username = dest;
+                    isGroup = true;
+                    write_helper(vector2string(std::vector<std::string>({"getgroupmessages", dest})));
+                }
+                else if(command.substr(0, strlen("/showgroups")).compare("/showgroups") == 0) {
+                    
+                }
+                else if(command.substr(0, strlen("/leavegroup")).compare("/leavegroup") == 0) {
+
+                }
+
             }
 
         }
