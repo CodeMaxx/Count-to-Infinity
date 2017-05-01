@@ -68,26 +68,6 @@ void chat::error(const char *msg)
     exit(0);
 }
 
-// void chat::free_port(int s)
-// {
-//     int optval = 1;
-//     setsockopt(portno, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
-//     close(sockfd); // Closing the socket.
-//     exit(0);
-// }
-
-// void chat::signal_capture()
-// {
-//     struct sigaction sigIntHandler;
-//     sigIntHandler.sa_handler = free_port;
-//     sigemptyset(&sigIntHandler.sa_mask);
-//     sigIntHandler.sa_flags = 0;
-//     while(1)
-//     {
-//         sigaction(SIGINT, &sigIntHandler, NULL);
-//     }
-// }
-
 void chat::write_helper(std::string str_buffer){ // Define this
     int n;
     char *buffer = new char[str_buffer.length() + 1];
@@ -141,10 +121,10 @@ void chat::read_thread()
             loggedin = false;
         }
         else if(messageVector[0] == "olusers") {
-            initialise_online(messageVector);
+            // initialise_online(messageVector);
         }
         else if(messageVector[0] == "users") {
-            initialise_all(messageVector);
+            // initialise_all(messageVector);
         }
         else if(messageVector[0] == "online") {
             std::cout << messageVector[1] << " came online now" << std::endl; 

@@ -1,7 +1,44 @@
 #include <string>
 #include <vector>
+#include <sys/termios.h>
+#include <sys/ioctl.h>
 
 char escape_char = '\\';
+
+void set_echoctl(const int fd, const int enable)
+{
+    struct termios tc; 
+    tcgetattr(fd, &tc);
+    tc.c_lflag &= ~ECHOCTL;
+    if (enable)
+    {   
+        tc.c_lflag |= ECHOCTL;
+    }   
+    tcsetattr(fd, TCSANOW, &tc);
+}
+
+void log(const char *const msg)
+{
+        // Go to line start
+        write(1, "\r", 1);
+        // Erases from the current cursor position to the end of the current line
+        write(1, "\033[K", strlen("\033[K"));
+
+        fprintf(stdout, "%s\n", msg);
+
+        // Move cursor one line up
+        write(1, "\033[1A", strlen("\033[1A"));
+        // Disable echo control characters
+        set_echoctl(1, 0);
+        // Ask to reprint input buffer
+        termios tc;
+        tcgetattr(1, &tc);
+        ioctl(1, TIOCSTI, &tc.c_cc[VREPRINT]);
+        // Enable echo control characters back
+        set_echoctl(1, 1);
+}
+
+
 
 void print_string_as_int(std::string s){
     for(auto x : s) {

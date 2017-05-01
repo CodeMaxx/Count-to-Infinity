@@ -20,11 +20,20 @@ class chat
     {
         std::string username; // Username
         std::string name; // Name
-        std::string status;
+        std::string lastOnline; // timestamp of when someone logged out
+        bool isOnline; // is this person online
+        int friendIndicator; // what's the relation with this person?
 
         identity()
         {
-            username = name = status = "";
+            username = name = lastOnline = "";
+        }
+        identity(std::string username, std::string name, std::string lastOnline, int friendIndicator, bool isOnline) {
+            this->username = username;
+            this->name = name;
+            this->lastOnline = lastOnline;
+            this->friendIndicator = friendIndicator;
+            this->isOnline = isOnline;
         }
     };
 
@@ -46,8 +55,14 @@ class chat
     };
 
 public:
+    // TODO : Make these vectors of identity, vectors of identity so that when one is changed, 
+    // it reflects the status all across the database 
     std::vector<identity> online; // Vector containing username of online friends
+    std::vector<identity> friends; // Vector containing username of all friends
     std::vector<identity> all; // Vector containing list of all friends
+    std::vector<identity> friendRequests; // Vector containing people who sent this person friendRequest
+    std::unordered_map<std::string, identity> username2identity; // username to *identity hash map
+    
     std::thread read_th;
     std::thread write_th;
     history hist; // Contains history of current session
@@ -59,10 +74,18 @@ public:
 
     const char escape_char = '\\'; // Escape character for escaping separators in client messages
 
+    void initialise_database(); // Initializes the database once `all` is filled
+
+    std::vector<identity> getOnlineusers(); 
+    std::vector<identity> getFriends();
+    std::vector<identity> getAllUsers();
+    std::vector<identity> getFriendRequests();
+
     void initialise_online(std::vector<std::string> msg); // Initially add all people who are online
     void update_online(std::vector<std::string> msg); // Add a person if he comes online
     void initialise_all(std::vector<std::string> msg); // Add all people part of the network
     void update_all(std::vector<std::string> msg); // Add if a new person joins the network
+    void updateFriendRequests(std::vector<std::string> v); // Someone sent a friend request to this person
 
     void print_all_users();
     void print_online_users();
@@ -76,9 +99,6 @@ public:
     void write_helper(std::string str_buffer);
 
     void read_thread();
-
-    void free_port(int s);
-    void signal_capture();
 
     // Helper functions
     void error(const char *msg);

@@ -277,7 +277,7 @@ bool register_func(std::vector<std::string> vec_reg,sqlite3* db, char* zErrMsg) 
     }
 
     std::string temp1 = "Select * from users where username = '" + vec_reg[1] +"'";
-
+    std::cout << temp1.c_str() << std::endl;
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, temp1.c_str(), -1, &selectstmt, NULL);
     if(result == SQLITE_OK)
@@ -839,9 +839,9 @@ void read_thread(int newsockfd) {
 
         std::vector<std::string> messageVector = string2vector(message);
         messageVector.push_back(std::to_string(newsockfd));
-        for(auto x : messageVector) {
-            std::cout << x << std::endl;
-        }
+        // for(auto x : messageVector) {
+        //     std::cout << x << std::endl;
+        // }
 
         control_thread_queue.produce(messageVector);
 
@@ -886,12 +886,15 @@ void offline_notify(std::string username) {
     }
 }
 
+void print_dividing_line() {
+    std::cout << "<~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>" << std::endl;
+}
+
 
 // Lockless queue which replies to the requests from users
 void control_thread() {
     sqlite3 *db;
     char *zErrMsg = 0;
-
     /* Open database */
     int rc = sqlite3_open("main.db", &db);
     if(rc)
@@ -909,13 +912,17 @@ void control_thread() {
         if(!control_thread_queue.isEmpty()) { 
             auto head = control_thread_queue.consume_all();
             while(head) {
+                print_dividing_line();
                 std::vector<std::string> messageVector = head->data;  
                 
                 int sockfd = atoi(messageVector.back().c_str());
                 messageVector.pop_back();
 
                 if(messageVector[0] == "register") 
-                {
+                {  
+                    for(auto x : messageVector) {
+                        std::cout << x << std::endl;
+                    }
                     if(register_func(messageVector, db, zErrMsg))
                     {
                         std::string success = "You have been registered successfully!";
@@ -1077,6 +1084,9 @@ void control_thread() {
                 auto temp = head->next;
                 delete head;
                 head = head->next;   
+
+                print_dividing_line();
+
             }
         }
     }
