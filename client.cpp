@@ -57,6 +57,7 @@ void chat::initialise_database(std::vector<std::string> msg) {
     }
 }
 
+
 std::vector<identity*> chat::getOnlineusers() {
     return online;
 }
@@ -68,6 +69,52 @@ std::vector<identity*> chat::getAllUsers() {
 }
 std::vector<identity*> chat::getFriendRequests() {
     return friendRequests;
+}
+
+void chat::update_online(std::vector<std::string> msg) // Update vector containing which people are online
+{
+    std::string username = msg[1];
+    identity *id = username2identity[username];
+    if(id->friendIndicator == 0){ // friends
+        id->isOnline = true;
+        online.push_back(id);
+    }    
+}
+
+void chat::update_offline(std::vector<std::string> msg){ 
+    std::string username = msg[1];
+    std::string last_seen = msg[2];
+    identity *id = username2identity[username];
+    if(id->friendIndicator == 0){ // friends
+        id->isOnline = false;
+        id->lastOnline = last_seen;
+        online.erase(id);
+    }
+}
+
+void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vector when first connection is made
+{
+    msg.erase(msg.begin());
+    identity id;
+
+    for (auto i = msg.begin(); i != msg.end(); i++) {
+        id.username = *i;
+        i++;
+        id.name = *i;
+                all.push_back(id);
+    }
+}
+
+void chat::update_new(std::vector<std::string> msg)
+{
+    identity *id = new identity;
+    id->username = msg[1];
+    id->name = msg[2];
+    id->lastOnline = "";
+    id->friendIndicator = 3; // no relation
+    id->isOnline = false;
+    all.push_back(id);
+    username2identity[msg[1]] = id;
 }
 
 void chat::error(const char *msg)
@@ -128,9 +175,8 @@ void chat::read_thread()
             printf("You have logged out\n" );
             loggedin = false;
         }
-        // else if(messageVector[0] == "olusers") {
-            // initialise_online(messageVector);
-        // }
+
+
         else if(messageVector[0] == "users") {
             initialise_database(messageVector);
         }
@@ -139,8 +185,7 @@ void chat::read_thread()
             update_online(messageVector);
         }
         else if(messageVector[0] == "offline") {
-            std::cout << messageVector[1] << " went offline" << std::endl; 
-
+            std::cout << messageVector[1] << " went offline" << std::endl;
         }
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;

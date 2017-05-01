@@ -518,7 +518,7 @@ std::string get_timestamp(sqlite3* db, char* zErrMsg, std::string username) {
 }
 
 
-// Get a list of online users who are your friends
+// Get a list of online users (username name) who are your friends
 std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg, std::string user) {
     std::string query = "SELECT username FROM users WHERE online = 1 INTERSECT SELECT user2 from friends WHERE user1 = '" + user + "' and edge = 0";
     std::vector<std::string> user_vector;
@@ -969,6 +969,8 @@ void control_thread() {
                         // write_to_socket(sockfd,vector2string(userlist));
                         std::vector<std::string> userlist = get_all_users(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));
+
+
 
                     }
                     else {
