@@ -501,7 +501,7 @@ std::string get_timestamp(sqlite3* db, char* zErrMsg, std::string username) {
 }
 
 
-// Get a list of online users who are your friends
+// Get a list of online users (username name) who are your friends
 std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg, std::string user) {
     std::string query = "SELECT username FROM users WHERE online = 1 INTERSECT SELECT user2 from friends WHERE user1 = '" + user + "' and edge = 0";
     std::vector<std::string> user_vector;
@@ -520,7 +520,7 @@ std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg, std::strin
 }   
 
 
-// Get a vector containing all users
+// Get a vector containing all users (username name friend_status)
 std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg, std::string user) {
     std::string query = "SELECT username FROM users EXCEPT SELECT user2 from friends WHERE user1='" + user + "' and edge = -2";
     std::vector<std::string> user_vector;
@@ -944,12 +944,14 @@ void control_thread() {
                         set_user_online(messageVector[1], sockfd, db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
-                        std::vector<std::string> userlist = get_online_users(db, zErrMsg, messageVector[1]);
+                        std::vector<std::string> online_friends = get_online_users(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));
-                        userlist = get_friends(db, zErrMsg, messageVector[1]);
+                        std::vector<std::string> friends = get_friends(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));
-                        userlist = get_all_users(db, zErrMsg, messageVector[1]);
+                        std::vector<std::string> all_users = get_all_users(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(userlist));
+
+
 
                     }
                     else {

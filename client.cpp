@@ -35,10 +35,23 @@ void chat::initialise_online(std::vector<std::string> msg) {
 
 void chat::update_online(std::vector<std::string> msg) // Update vector containing which people are online
 {
-    identity id;
-    id.username = msg[1];
-    id.name = msg[2];
-    online.push_back(id);
+    std::string username = msg[1];
+    identity *id = username2identity[username];
+    if(id->friendIndicator == 0){ // friends
+        id->isOnline = true;
+        online.push_back(id);
+    }    
+}
+
+void chat::update_offline(std::vector<std::string> msg){ 
+    std::string username = msg[1];
+    std::string last_seen = msg[2];
+    identity *id = username2identity[username];
+    if(id->friendIndicator == 0){ // friends
+        id->isOnline = false;
+        id->lastOnline = last_seen;
+        online.erase(id);
+    }
 }
 
 void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vector when first connection is made
@@ -50,17 +63,23 @@ void chat::initialise_all(std::vector<std::string> msg) // Intialise the all vec
         id.username = *i;
         i++;
         id.name = *i;
-        all.push_back(id);
+                all.push_back(id);
     }
 }
 
 void chat::update_all(std::vector<std::string> msg)
 {
-    identity id;
-    id.username = msg[1];
-    id.name = msg[2];
+    identity *id = new identity;
+    id->username = msg[1];
+    id->name = msg[2];
+    id->lastOnline = "";
+    id->friendIndicator = 3; // no relation
+    id->isOnline = false;
     all.push_back(id);
+    username2identity[msg[1]] = id;
 }
+
+void chat::updateFriendRequests()
 
 void chat::error(const char *msg)
 {
@@ -121,16 +140,19 @@ void chat::read_thread()
             loggedin = false;
         }
         else if(messageVector[0] == "olusers") {
-            // initialise_online(messageVector);
+             initialise_online(messageVector);
         }
         else if(messageVector[0] == "users") {
             // initialise_all(messageVector);
         }
         else if(messageVector[0] == "online") {
-            std::cout << messageVector[1] << " came online now" << std::endl; 
+            std::cout << messageVector[1] << " came online now" << std::endl;
+            update_online(messageVector);
+
         }
         else if(messageVector[0] == "offline") {
-            std::cout << messageVector[1] << " went offline" << std::endl; 
+            std::cout << messageVector[1] << " went offline" << std::endl;
+
         }
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
@@ -183,7 +205,7 @@ void chat::print_help() {
     printf("/showOnline - Show all online users\n");
     printf("/logout - To logout and quit\n");
     printf("/sendfile - To send file to friend\n");
-    printf("/setStatus - Set a status for yourself");
+    printf("/setStatus - Set a status for yourself\n");
 }
 
 void chat::write_thread()

@@ -83,6 +83,7 @@ public:
     std::vector<identity> getAllUsers();
     std::vector<identity> getFriendRequests();
     void update_online(std::vector<std::string> msg); // Add a person if he comes online
+    void update_offline(std::vector<std::string> msg); // Remove user from online list
     void update_all(std::vector<std::string> msg); // Add if a new person joins the network
     void updateFriendRequests(std::vector<std::string> msg); // Someone sent a friend request to this person, so update friend
     void blockedYou(std::vector<std::string> msg); // someone blocked you, so you just remove him from all the lists/maps
