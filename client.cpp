@@ -74,6 +74,20 @@ void chat::print_all_groups() {
     }
 }
 
+void chat::print_all_messages(std::string username) {
+    identity *id = username2identity[username];
+    for (message msg : id->messages) {
+        std::cout << msg.username << ": " << msg.msg << std::endl;
+    }
+}
+
+void chat::print_group_messages(std::string group_name) {
+    group *grp = groupname2group[group_name];
+    for (message msg : grp->messages) {
+        std::cout << msg.username << ": " << msg.msg << std::endl;
+    } 
+}
+
 void chat::initialise_database(std::vector<std::string> msg) {
     msg.erase(msg.begin());
     for (int i = 0; i != msg.size();) {
@@ -260,7 +274,7 @@ void chat::update_groups(std::vector<std::string> msg) {
 void chat::all_group_messages(std::vector<std::string> msg){ 
     std::string group_name = msg[1];
     group *grp = groupname2group[group_name];
-
+    grp->updatedMessages = true;
     for(int i = 2; i < msg.size();){
         std::string group_name = msg[i];
         i++;
@@ -276,7 +290,7 @@ void chat::all_group_messages(std::vector<std::string> msg){
 void chat::all_messages(std::vector<std::string> msg){ 
     std::string curr_username = msg[1];
     identity* id = username2identity[curr_username];
-
+    id->updatedMessages = true;
     for(int i = 2; i < msg.size();){
         std::string from_username = msg[i];
         i++;
@@ -292,11 +306,26 @@ void chat::all_messages(std::vector<std::string> msg){
 void chat::add_message(std::vector<std::string> msg){
     std::string username = msg[1];
     identity* id = username2identity[username];
-    std::string new_msg = msg[2];
-    message new_message;
-    new_message.msg = new_msg;
-    new_message.username = username;
-    (id->messages).push_back(new_message);
+    if(id->updatedMessages) {    
+        std::string new_msg = msg[2];
+        message new_message;
+        new_message.msg = new_msg;
+        new_message.username = username;
+        (id->messages).push_back(new_message);
+    }
+}
+
+void chat::add_group_message(std::vector<std::string> msg) {
+    std::string group_name = msg[1];
+    group *grp = groupname2group[group_name];
+    if(grp->updatedMessages) {
+        std::string username = msg[2];
+        std::string messag = msg[3];
+        message new_message;
+        new_message.msg = messag;
+        new_message.username = username;
+        (grp->messages).push_back(new_message);
+    }
 }
 
 void chat::write_helper(std::string str_buffer){ // Define this
@@ -372,6 +401,17 @@ void chat::read_thread()
             else
                 std::cout << "You have a new message from " + messageVector[1] << std::endl;
             add_message(messageVector);
+        }
+        else if(messageVector[0] == "all_messages") {
+            all_messages(messageVector);
+            print_all_messages(messageVector[1]);
+        }
+        else if(messageVector[0] == "group_messages") {
+            all_group_messages(messageVector);
+            print_group_messages(messageVector[1]);
+        }
+        else if(messageVector[0] == "messagegroup") {
+            add_group_message(messageVector);
         }
         else if(messageVector[0] == "sendreq"){
             std:: cout << "You need to send a friend request to " + messageVector[1] + " first" << std::endl;
@@ -581,6 +621,7 @@ void chat::write_thread()
                     isGroup = false;
                     printf("Friend's username: ");
                     getline(std::cin, dest_username);
+                    write_helper(vector2string(std::vector<std::string>({"getmessages", dest_username})));
                     // check if dest_username is valid?
     
                 }

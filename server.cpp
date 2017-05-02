@@ -1038,8 +1038,7 @@ std::string get_group_name_from_id(sqlite3* db, char* zErrMsg, int group_chat_id
 
 std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std::string username){
     std::vector<std::string> group_name_vec;
-    std::cout << username << std::endl;
-    std::string query = "Select * from chats_users_xref where username = '" + username +"'";
+    std::string query = "Select * from chats_users_xref where and username = '" + username +"'";
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
 
@@ -1047,7 +1046,6 @@ std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std
        while (sqlite3_step(selectstmt) == SQLITE_ROW){
             int group_chat_id = sqlite3_column_int(selectstmt, 1);
             std::string gp_name = get_group_name_from_id(db, zErrMsg, group_chat_id);
-            printf("%s\n", gp_name.c_str());
             if(gp_name != "individual_chat"){
                 group_name_vec.push_back(gp_name);
             }
@@ -1402,12 +1400,21 @@ void control_thread() {
                 }
                 else if(messageVector[0] == "messagegroup") {
                     std::vector<std::string> users = send_group(db, zErrMsg, messageVector[1], messageVector[2], get_username(sockfd, db, zErrMsg));
+                    std::vector<std::string> message({"messagegroup", messageVector[1], get_username(sockfd, db, zErrMsg), messageVector[2]});
+                    for (std::string user : users) {
+                        int destsock = get_socket(user, db, zErrMsg);
+                        if(destsock != 0) {
+                            write_to_socket(destsock, vector2string(message));
+                        }
+                    }
                 }
                 else if(messageVector[0] == "getgroupmessages") {
                     std::vector<std::string> messages = retrieve_messages_group (db, zErrMsg, messageVector[1]);
                     for(auto x : messages) {
                         std::cout << x << std::endl;
                     }
+                    write_to_socket(sockfd, vector2string(messages));
+
                 }
                 else if(messageVector[0] == "leavegroup") {
                     leave_group(db, zErrMsg, messageVector[1], get_username(sockfd, db, zErrMsg));

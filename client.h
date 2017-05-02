@@ -63,13 +63,15 @@ public:
     void all_group_messages(std::vector<std::string> msg);  // _ group name  (username message)
     void all_messages(std::vector<std::string> msg);    // _ username  (username message)
     void add_message(std::vector<std::string> msg); // /message username message 
-    //void add_group_message(std::vector<std::string> msg);
+    void add_group_message(std::vector<std::string> msg);
 
     void print_all_users();
     void print_online_users();
     void print_friends(); 
     void print_friend_requests(); 
     void print_all_groups();
+    void print_all_messages(std::string username);
+    void print_group_messages(std::string group_name);
 
     void connect_to_server(char* server_name, int port_num);
     void start_chat();
