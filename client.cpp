@@ -43,7 +43,7 @@ void chat::print_friends() {
         std::cout << "List of Friends: " << std::endl;
         std::cout << "Username \t Name" << std::endl;
         for (auto x : friends) {
-            std::cout << x->username << " \t "  << x->name << std::endl;
+            std::cout << x->username << " \t "  << x->name << "\t (" << x->lastOnline << ")" << std::endl;
         }
     }
     else {
@@ -594,10 +594,13 @@ void chat::print_help() {
     std::cout << termcolor::yellow<<"/reject [username] - Reject friend request from [username] \n";
     std::cout << termcolor::yellow<<"/block [username] - Blocks [username] \n";
     std::cout << termcolor::yellow<<"/unblock [username] - Unblocks [username] \n\n";
+    
+    std::cout << termcolor::yellow<<"/exit - Exits the app \n";
 
-    std::cout << termcolor::yellow<<"-----> Misc <----- \n"; 
-    std::cout << termcolor::yellow<<"/sendfile - To send file to friend\n";
-    std::cout << termcolor::yellow<<"/setStatus - Set a status for yourself \n\n";
+
+    // std::cout << termcolor::yellow<<"-----> Misc <----- \n"; 
+    // std::cout << termcolor::yellow<<"/sendfile - To send file to friend\n";
+    // std::cout << termcolor::yellow<<"/setStatus - Set a status for yourself \n\n";
     std::cout << termcolor::reset << "\n";
 }
 
@@ -648,8 +651,8 @@ void chat::write_thread()
         bzero(buffer,256);
         std::string endOfMessage = "#";
         std::cout << std::endl;
-        std::cout << termcolor::on_yellow << "You: ";
-        std::cout << termcolor::reset << "";
+        std::cout << termcolor::on_yellow << "You:";
+        std::cout << termcolor::reset << " ";
         std::string str_buffer;
 
         getline (std::cin, str_buffer);
@@ -729,6 +732,15 @@ void chat::write_thread()
                     std::cout << termcolor::reset << "";
                     getline(std::cin, dest_username);
                     write_helper(vector2string(std::vector<std::string>({"getmessages", dest_username})));
+                    identity *id = username2identity[dest_username];
+                    if(id) {    
+                        if(id->isOnline) {
+                            std::cout << id->username << " \t "  << id->name << "\t (" << id->lastOnline << ")" << std::endl;
+                        }
+                        else {
+                            std::cout << id->username << " \t "  << id->name << "\t (Active now)" << std::endl;
+                        }
+                    }
                     // check if dest_username is valid?
     
                 }

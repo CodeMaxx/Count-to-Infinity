@@ -79,13 +79,13 @@ bool ldap_login(std::string cn, std::string pass) {
 void write_to_socket(int newsockfd, std::string data) {
     int n;
     char buffer[256];
-    while(data.size() > 256)
+    while(data.size() > 255)
     {
-        strncpy(buffer, data.c_str(), 256);
+        strncpy(buffer, data.c_str(), 255);
         std::cout << "Wrting to socket :" << buffer << std::endl;
         n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
         if (n < 0) error("ERROR writing to socket");
-        else data.erase(0, 256);
+        else data.erase(0, 255);
     }
     if(data.size() > 0) {
         strcpy(buffer, data.c_str());
