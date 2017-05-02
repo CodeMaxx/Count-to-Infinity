@@ -1,6 +1,5 @@
 #include "client.h"
 #include "utils.cpp"
-#include <termcolor/termcolor.hpp>
 
 
 // int chat::portno = 9399;
@@ -19,7 +18,7 @@ void chat::print_all_users() {
         }
     }
     else {
-        std::cout << termcolor::red<<"There are no users \n"
+        std::cout << termcolor::red<<"There are no users \n";
         std::cout << termcolor::red<<"It's so lonely, call over other people onto this cli rtm";
         std::cout << termcolor::reset << "\n";
     }
@@ -369,20 +368,20 @@ void chat::read_thread()
             initialise_database(messageVector);
         }
         else if(messageVector[0] == "online") {
-            std::cout << termcolor::green<< messageVector[1] << " came online now" << std::endl; 
+            std::cout << termcolor::green<< messageVector[1] << " came online now" << std::endl << '\a'; 
             update_online(messageVector);
             std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "offline") {
-            std::cout << termcolor::red<< messageVector[1] << " went offline" << std::endl;
+            std::cout << termcolor::red<< messageVector[1] << " went offline" << std::endl << '\a';
             update_offline(messageVector);
             std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "message") {
             if(dest_username == messageVector[1])
-                std::cout << termcolor::blue<<messageVector[1] << ": " << messageVector[2];
+                std::cout << termcolor::blue<<messageVector[1] << ": " << messageVector[2] << '\a';
             else
-                std::cout <<termcolor::green<< "You have a new message from " + messageVector[1];
+                std::cout <<termcolor::green<< "You have a new message from " + messageVector[1] << '\a';
             add_message(messageVector);
             std::cout << termcolor::reset << "\n";
 
@@ -496,7 +495,8 @@ void chat::print_help() {
 
     std::cout << termcolor::yellow<<"-----> Misc <----- \n"; 
     std::cout << termcolor::yellow<<"/sendfile - To send file to friend\n";
-    std::cout << termcolor::reset<<"/setStatus - Set a status for yourself \n\n";
+    std::cout << termcolor::yellow<<"/setStatus - Set a status for yourself \n\n";
+    std::cout << termcolor::reset << "\n";
 }
 
 bool check_valid_username(std::string username){
@@ -545,7 +545,9 @@ void chat::write_thread()
     {
         bzero(buffer,256);
         std::string endOfMessage = "#";
-        printf("\nYou: ");
+        std::cout << std::endl;
+        std::cout << termcolor::on_yellow << "You: ";
+        std::cout << termcolor::reset << "";
         std::string str_buffer;
 
         getline (std::cin, str_buffer);
@@ -563,27 +565,33 @@ void chat::write_thread()
                     std::string name, password, username;
                     std::vector<std::string> message;
                     message.push_back("register");
-                    printf("Username: ");
+                    std::cout << termcolor::on_blue <<"Username: ";
+                    std::cout << termcolor::reset << "";
                     getline(std::cin, username);
                     bool username_valid = check_valid_username(username);
                     while(!username_valid){
-                        printf("Username: ");
+                        std::cout << termcolor::on_blue <<"Username: ";
+                        std::cout << termcolor::reset << "";
                         getline(std::cin, username);
                         username_valid = check_valid_username(username);
                     }
-                    printf("Name: ");
+                    std::cout << termcolor::on_blue<<"Name: ";
+                    std::cout << termcolor::reset << "";
                     getline(std::cin, name);
                     bool name_valid = check_valid_name(name);
                     while(!name_valid){
-                        printf("Name: ");
+                        std::cout << termcolor::on_blue << "Name: ";
+                        std::cout << termcolor::reset << "";
                         getline(std::cin, name);
                         name_valid = check_valid_name(name);
                     }
-                    printf("Password: ");
+                    std::cout << termcolor::on_blue<<"Password: ";
+                    std::cout << termcolor::reset << "";
                     getline(std::cin, password);
                     bool password_valid = check_valid_password(password);
                     while(!password_valid){
-                        printf("Password: ");
+                        std::cout << termcolor::on_blue <<"Password: ";
+                        std::cout << termcolor::reset << "";
                         getline(std::cin, password);
                         password_valid = check_valid_password(password);
                     }
@@ -596,9 +604,11 @@ void chat::write_thread()
                 else if(command.substr(0, strlen("/login")).compare("/login") == 0){
                     std::string username, password;
                     std::vector<std::string> msg;
-                    printf("Username: ");
+                    std::cout << termcolor::on_blue<<"Username: ";
+                    std::cout << termcolor::reset << "";
                     getline(std::cin, username);
-                    printf("Password: ");
+                    std::cout << termcolor::on_blue << "Password: ";
+                    std::cout << termcolor::reset << "";
                     getline(std::cin, password);
                     msg.push_back("login");
                     msg.push_back(username);
@@ -607,12 +617,14 @@ void chat::write_thread()
                     write_helper(vector2string(msg));
                 }
                 else
-                    std::cout << "Please login to enjoy Count To Infinity services!" << std::endl;
+                    std::cout << termcolor::red << "Please login to enjoy Count To Infinity services!";
+                    std::cout << termcolor::reset << "";
             }
             else {
                 if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
                     isGroup = false;
-                    printf("Friend's username: ");
+                    std::cout << termcolor::on_blue << "";"Friend's username: ";
+                    std::cout << termcolor::reset << "";
                     getline(std::cin, dest_username);
                     // check if dest_username is valid?
     
@@ -637,31 +649,36 @@ void chat::write_thread()
                 }
                 else if(command.substr(0, strlen("/friend")).compare("/friend") == 0) {
                     std::string dest;
-                    printf("Username: ");
+                    std::cout << termcolor::on_blue<<"Username: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"friend", dest})));
                 }
                 else if(command.substr(0, strlen("/accept")).compare("/accept") == 0) {
                     std::string dest;
-                    printf("Username: ");
+                    std::cout << termcolor::on_blue<<"Username: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"accept", dest})));
                 }
                 else if(command.substr(0, strlen("/reject")).compare("/reject") == 0) {
                     std::string dest;
-                    printf("Username: ");
+                    std::cout << termcolor::on_blue<<"Username: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"reject", dest})));
                 }
                 else if(command.substr(0, strlen("/block")).compare("/block") == 0) {
                     std::string dest;
-                    printf("Username: ");
+                    std::cout << termcolor::on_blue<<"Username: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"block", dest})));
                 }
                 else if(command.substr(0, strlen("/unblock")).compare("/unblock") == 0) {
                     std::string dest;
-                    printf("Username: ");
+                    std::cout << termcolor::on_blue<<"Username: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"unblock", dest})));
                 } 
@@ -669,10 +686,12 @@ void chat::write_thread()
                     std::string temp;
                     std::vector<std::string> messageVector;
                     messageVector.push_back("creategroup");
-                    printf("Group name: ");
+                    std::cout << termcolor::on_blue<<"Group name: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> temp;
                     messageVector.push_back(temp);
-                    printf("Usernames: ");
+                    std::cout << termcolor::on_blue << "Usernames: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> temp;
 
                     while(temp != "\\") {
@@ -684,7 +703,8 @@ void chat::write_thread()
                 }
                 else if(command.substr(0, strlen("/groupchat")).compare("/groupchat") == 0) {
                     std::string dest;
-                    printf("Group name: ");
+                    std::cout << termcolor::on_blue<<"Group name: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> dest;
                     dest_username = dest;
                     isGroup = true;
@@ -695,7 +715,8 @@ void chat::write_thread()
                 }
                 else if(command.substr(0, strlen("/leavegroup")).compare("/leavegroup") == 0) {
                     std::string group;
-                    std::cout << "Group name: " << std::endl;
+                    std::cout << termcolor::on_blue<<"Group name: ";
+                    std::cout << termcolor::reset << "";
                     std::cin >> group;
                     write_helper(vector2string(std::vector<std::string>({"leavegroup", group})));
                 }
