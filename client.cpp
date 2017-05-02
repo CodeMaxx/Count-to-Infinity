@@ -67,6 +67,18 @@ void chat::print_friend_requests() {
         std::cout << termcolor::reset << "\n";
     }
 }
+void chat::print_all_groups() {
+    if(all_groups.size() > 0) {
+        std::cout << "List of groups: " << std::endl;
+        std::cout << "Group name" << std::endl;
+        for (auto x : all_groups) {
+            std::cout << x->groupname << std::endl;
+        }
+    }
+    else {
+        std::cout << "You are not in any group as of now" << std::endl;
+    }
+}
 
 void chat::initialise_database(std::vector<std::string> msg) {
     msg.erase(msg.begin());
@@ -119,11 +131,6 @@ std::vector<identity*> chat::getFriendRequests() {
     return friendRequests;
 }
 
-void chat::update_groups(std::vector<std::string> msg) {
-
-    // std::string group_name = msg[1];
-    // still pending
-}
 
 void chat::update_block(std::vector<std::string> msg) {
     std::string username = msg[1];
@@ -224,8 +231,41 @@ void chat::blockedYou(std::vector<std::string> msg){
     delete id;
 }
 
+void chat::update_groups(std::vector<std::string> msg) {
+
+    if(msg.size() > 1) {
+        group *grp;
+        grp = NULL;
+        int start = 1;
+        int i;
+        for (i = 1; i != msg.size(); i++) {
+            if(msg[i] == "group") {
+                if(grp != NULL) {
+                    groupname2group[grp->groupname] = grp;
+                    all_groups.push_back(grp);
+                }
+                start = i;
+                grp = new group();
+            }
+            else if(start + 1 == i){
+                grp->groupname = msg[i];
+            }
+            else if(start + 1 < i) {
+                grp->users.push_back(msg[i]);
+            }
+        }
+        if(i != 1) {
+            if(grp != NULL) {
+                groupname2group[grp->groupname] = grp;
+                all_groups.push_back(grp);
+            }
+        }
+    }
+}
+
 void chat::all_group_messages(std::vector<std::string> msg){ 
-    std::string curr_username = msg[1];
+    std::string group_name = msg[1];
+    group *grp = groupname2group[group_name];
 
     for(int i = 2; i < msg.size();){
         std::string group_name = msg[i];
@@ -235,7 +275,7 @@ void chat::all_group_messages(std::vector<std::string> msg){
         message curr_msg;
         curr_msg.msg = message_recv;
         curr_msg.username = group_name;
-        group_messages[group_name].push_back(curr_msg);
+        (grp->messages).push_back(curr_msg);
     }
 }
 
@@ -433,6 +473,7 @@ void chat::print_help() {
     std::cout << termcolor::yellow<<"/login [username] [password]\n";
     std::cout << termcolor::yellow<<"/logout - To logout and quit\n\n";
     
+
     std::cout << termcolor::yellow<<"-----> Chat (one - one) <----- \n"; 
     std::cout << termcolor::yellow<<"/chat [Friend's Username] - To chat with a friend\n";
     std::cout << termcolor::yellow<<"/showall - Lists all registered users\n";
@@ -452,7 +493,6 @@ void chat::print_help() {
     std::cout << termcolor::yellow<<"/reject [username] - Reject friend request from [username] \n";
     std::cout << termcolor::yellow<<"/block [username] - Blocks [username] \n";
     std::cout << termcolor::yellow<<"/unblock [username] - Unblocks [username] \n\n";
-    
 
     std::cout << termcolor::yellow<<"-----> Misc <----- \n"; 
     std::cout << termcolor::yellow<<"/sendfile - To send file to friend\n";
@@ -651,10 +691,13 @@ void chat::write_thread()
                     write_helper(vector2string(std::vector<std::string>({"getgroupmessages", dest})));
                 }
                 else if(command.substr(0, strlen("/showgroups")).compare("/showgroups") == 0) {
-                    
+                    print_all_groups();
                 }
                 else if(command.substr(0, strlen("/leavegroup")).compare("/leavegroup") == 0) {
-
+                    std::string group;
+                    std::cout << "Group name: " << std::endl;
+                    std::cin >> group;
+                    write_helper(vector2string(std::vector<std::string>({"leavegroup", group})));
                 }
 
             }
