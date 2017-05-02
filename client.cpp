@@ -5,6 +5,9 @@
 // bool chat::loggedin = false;
 // int chat::sockfd = 0;
 
+bool isGroup = false;
+std::string dest_username;
+
 void chat::print_all_users() {
     if(all.size() > 0) {
         std::cout << "List of ALL users: " << std::endl;
@@ -350,7 +353,10 @@ void chat::read_thread()
             update_offline(messageVector);
         }
         else if(messageVector[0] == "message") {
-            std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
+            if(dest_username == messageVector[1])
+                std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
+            else
+                std::cout << "You have a new message from " + messageVector[1] << std::endl;
             add_message(messageVector);
         }
         else if(messageVector[0] == "sendreq"){
@@ -397,6 +403,13 @@ void chat::read_thread()
             std::cout << messageVector[1] + " accepted your friend request" << std::endl;
             update_friend(messageVector);
         }
+        else if(messageVector[0] == "rejected") {
+            std::cout << "Rejected friend request from " + messageVector[1] << std::endl;
+            removeFriendRequest(messageVector);
+        }
+        else if(messageVector[0] == "rejectedyour") {
+            std::cout << messageVector[1] + " rejected your friend request" << std::endl;
+        }
         else if(messageVector[0] == "groups") {
             update_groups(messageVector);
         }
@@ -432,6 +445,7 @@ void chat::print_help() {
     printf("-----> Friend Requests / Blocking <----- \n"); 
     printf("/friend [username] - Send a friend request to [username] \n");
     printf("/accept [username] - Accepts the friend request from [username] \n");
+    printf("/reject [username] - Reject friend request from [username] \n");
     printf("/block [username] - Blocks [username] \n");
     printf("/unblock [username] - Unblocks [username] \n");
     
@@ -477,8 +491,7 @@ void chat::write_thread()
     int n;
     char buffer[256];
 
-    bool isGroup = false;
-    std::string dest_username;
+    isGroup = false;
 
     while(1)
     {
@@ -585,6 +598,12 @@ void chat::write_thread()
                     printf("Username: ");
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"accept", dest})));
+                }
+                else if(command.substr(0, strlen("/reject")).compare("/reject") == 0) {
+                    std::string dest;
+                    printf("Username: ");
+                    std::cin >> dest;
+                    write_helper(vector2string(std::vector<std::string>({"reject", dest})));
                 }
                 else if(command.substr(0, strlen("/block")).compare("/block") == 0) {
                     std::string dest;

@@ -14,6 +14,8 @@
 #include <signal.h> // For caputuring ctrl+c and freeing the port
 #include <functional> // for std::bind
 #include "identity.cpp"
+#include "termcolor.hpp"
+
 class chat
 {
     
