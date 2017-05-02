@@ -1038,7 +1038,7 @@ std::string get_group_name_from_id(sqlite3* db, char* zErrMsg, int group_chat_id
 
 std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std::string username){
     std::vector<std::string> group_name_vec;
-    std::string query = "Select * from chats_users_xref where and username = '" + username +"'";
+    std::string query = "Select * from chats_users_xref where username = '" + username +"'";
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
 
@@ -1397,6 +1397,13 @@ void control_thread() {
                 }
                 else if(messageVector[0] == "creategroup") {
                     create_group(db, zErrMsg, messageVector, get_username(sockfd, db, zErrMsg));
+                    messageVector[0] = "group";
+                    for (int i = 2; i != messageVector.size(); i++) {
+                        int destsock = get_socket(messageVector[i], db, zErrMsg);
+                        if(destsock != 0) {
+                            write_to_socket(destsock, vector2string(messageVector));
+                        }
+                    }
                 }
                 else if(messageVector[0] == "messagegroup") {
                     std::vector<std::string> users = send_group(db, zErrMsg, messageVector[1], messageVector[2], get_username(sockfd, db, zErrMsg));
@@ -1418,6 +1425,13 @@ void control_thread() {
                 }
                 else if(messageVector[0] == "leavegroup") {
                     leave_group(db, zErrMsg, messageVector[1], get_username(sockfd, db, zErrMsg));
+                    for (std::string user : get_user_list_for_group(db, zErrMsg, messageVector[1])) {
+                        int destsock = get_socket(user, db, zErrMsg);
+                        messageVector.push_back(get_username(sockfd, db, zErrMsg));
+                        if(destsock != 0) {
+                            write_to_socket(destsock, vector2string(messageVector));
+                        }
+                    }
                 }
                 else if(messageVector[0] == "") {
 
