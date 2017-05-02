@@ -297,6 +297,7 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "offline") {
             std::cout << messageVector[1] << " went offline" << std::endl;
+            update_offline(messageVector);
         }
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
