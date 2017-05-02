@@ -196,14 +196,19 @@ void chat::update_group(std::vector<std::string> msg){
     for(int i = 2; i < msg.size(); i++){
         grp_users.push_back(msg[i]);
     }
-    group new_group(group_name, grp_users);
-    groupname2group[group_name] = &new_group;
+    group * grp = new group(group_name, grp_users);
+    groupname2group[group_name] = grp;
 
 }
 
 void chat::remove_from_group(std::vector<std::string> msg){
 
 }
+
+void chat::remove_group(std::vector<std::string> msg) {
+
+}
+
 void chat::error(const char *msg)
 {
     perror(msg);
@@ -428,6 +433,14 @@ void chat::read_thread()
             std::cout << termcolor::reset << "\n";
 
         }
+        else if(messageVector[0] == "messagegroup") {
+            if(dest_username == messageVector[1])
+                std::cout << termcolor::blue<<messageVector[2] << ": " << messageVector[3] << '\a';
+            else
+                std::cout <<termcolor::green<< "You have a new message from group " + messageVector[1] << '\a';
+            add_message(messageVector);
+            std::cout << termcolor::reset << "\n";
+        }
         else if(messageVector[0] == "all_messages") {
             all_messages(messageVector);
             print_all_messages(messageVector[1]);
@@ -511,7 +524,10 @@ void chat::read_thread()
             update_groups(messageVector);
         }
         else if(messageVector[0] == "group") {
-            // update_group(messageVector);
+            update_group(messageVector);
+        }
+        else if (messageVector[0] == "left") {
+            remove_group(messageVector);
         }
         else if(messageVector[0] == "newregister") {
             update_new(messageVector);
@@ -794,7 +810,13 @@ void chat::write_thread()
         else if(loggedin)
         {
             if(dest_username != "") {
-                std::vector<std::string> messageVector({"message"});
+                std::vector<std::string> messageVector;
+                if(isGroup) {
+                    messageVector.push_back("messagegroup");
+                }
+                else {
+                    messageVector.push_back("message");
+                }
                 messageVector.push_back(dest_username);
                 messageVector.push_back(str_buffer);
                 write_helper(vector2string(messageVector));

@@ -1432,6 +1432,7 @@ void control_thread() {
                             write_to_socket(destsock, vector2string(messageVector));
                         }
                     }
+                    write_to_socket(sockfd, vector2string(std::vector<std::string>({"left", messageVector[1]})));
                 }
                 else if(messageVector[0] == "") {
 
