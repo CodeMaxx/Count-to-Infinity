@@ -415,6 +415,37 @@ void chat::print_help() {
     printf("/setStatus - Set a status for yourself \n");
 }
 
+bool check_valid_username(std::string username){
+    int len = username.length();
+    if(len < 6 || len > 30){
+        std::cout << "Invalid username. Username should contain at least 6 and not more than 30 characters" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool check_valid_password(std::string password){
+    int len = password.length();
+    if(len < 6){
+        std::cout << "Password should contain at least 6 characters" << std::endl;
+        return false;
+    }
+    if(password.find('#') != std::string::npos){
+        printf("Password should not contain '#'\n");
+        return false;
+    }
+    return true;
+}
+
+bool check_valid_name(std::string name){
+    if(name.empty()){
+        std::cout << "Name should contain at least one character.";
+        return false;
+    }
+    return true;
+}
+
+
 void chat::write_thread()
 {
     int n;
@@ -447,11 +478,28 @@ void chat::write_thread()
                     message.push_back("register");
                     printf("Username: ");
                     getline(std::cin, username);
+                    bool username_valid = check_valid_username(username);
+                    while(!username_valid){
+                        printf("Username: ");
+                        getline(std::cin, username);
+                        username_valid = check_valid_username(username);
+                    }
                     printf("Name: ");
                     getline(std::cin, name);
+                    bool name_valid = check_valid_name(name);
+                    while(!name_valid){
+                        printf("Name: ");
+                        getline(std::cin, name);
+                        name_valid = check_valid_name(name);
+                    }
                     printf("Password: ");
                     getline(std::cin, password);
-
+                    bool password_valid = check_valid_password(password);
+                    while(!password_valid){
+                        printf("Password: ");
+                        getline(std::cin, password);
+                        password_valid = check_valid_password(password);
+                    }
                     message.push_back(username);
                     message.push_back(name);
                     message.push_back(password);
