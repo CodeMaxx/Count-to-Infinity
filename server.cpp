@@ -1154,8 +1154,11 @@ void control_thread() {
                     }
                     if(register_func(messageVector, db, zErrMsg))
                     {
-                        std::string success = "You have been registered successfully!";
-                        write_to_socket(sockfd, success);
+                        write_to_socket(sockfd, vector2string({"registersucess"}));
+                        for(auto sock: logged_in_sockets)
+                        {
+                            write_to_socket(sock, vector2string({"newregister", messageVector[1], messageVector[2]}));
+                        }
                     }
                     else
                     {
