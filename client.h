@@ -64,6 +64,8 @@ public:
     void all_messages(std::vector<std::string> msg);    // _ username  (username message)
     void add_message(std::vector<std::string> msg); // /message username message 
     void add_group_message(std::vector<std::string> msg);
+    void update_group(std::vector<std::string> msg); // add new group
+    void remove_from_group(std::vector<std::string> msg); // remove user from group
 
     void print_all_users();
     void print_online_users();
