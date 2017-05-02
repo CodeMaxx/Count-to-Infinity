@@ -1080,6 +1080,8 @@ std::vector<std::string> get_user_list_for_group(sqlite3* db, char* zErrMsg, std
             user_list.push_back((char*)sqlite3_column_text(selectstmt, 0));
        }
     }
+
+    return user_list;
 }
 
 //get list of group names and list of members of group corresponding to username
@@ -1102,6 +1104,8 @@ std::vector<std::string> get_group_name_and_user_list(sqlite3* db, char* zErrMsg
             ans_list.push_back(user_list[j]);
         }
     }
+
+    return  ans_list;
 }
 
 

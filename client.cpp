@@ -5,6 +5,9 @@
 // bool chat::loggedin = false;
 // int chat::sockfd = 0;
 
+bool isGroup = false;
+std::string dest_username;
+
 void chat::print_all_users() {
     if(all.size() > 0) {
         std::cout << "List of ALL users: " << std::endl;
@@ -296,7 +299,7 @@ void chat::read_thread()
             else
                 buffer_str.append(buffer);
         }
-        printf("%s\n", buffer_str.c_str());
+        printf("%s\n", buffer_str.c_str()); // TODO in Release
         auto messageVector = string2vector(buffer_str);
         if(messageVector[0] == "login") {
             loggedin = true;
@@ -324,7 +327,10 @@ void chat::read_thread()
             update_offline(messageVector);
         }
         else if(messageVector[0] == "message") {
-            std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
+            if(dest_username == messageVector[1])
+                std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
+            else
+                std::cout << "You have a new message from " + messageVector[1] << std::endl;
             add_message(messageVector);
         }
         else if(messageVector[0] == "sendreq"){
@@ -459,8 +465,7 @@ void chat::write_thread()
     int n;
     char buffer[256];
 
-    bool isGroup = false;
-    std::string dest_username;
+    isGroup = false;
 
     while(1)
     {
@@ -618,6 +623,12 @@ void chat::write_thread()
 
                 }
 
+            }
+
+            if(command.substr(0, strlen("/exit")).compare("/exit") == 0)
+            {
+                std::cout << "Exiting..." <<  std::endl;
+                exit(0);
             }
 
         }
