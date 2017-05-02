@@ -110,11 +110,6 @@ std::vector<identity*> chat::getFriendRequests() {
     return friendRequests;
 }
 
-void chat::update_groups(std::vector<std::string> msg) {
-
-    // std::string group_name = msg[1];
-    // still pending
-}
 
 void chat::update_block(std::vector<std::string> msg) {
     std::string username = msg[1];
@@ -215,8 +210,39 @@ void chat::blockedYou(std::vector<std::string> msg){
     delete id;
 }
 
+void chat::update_groups(std::vector<std::string> msg) {
+
+    if(msg.size() > 1) {
+        group *grp;
+        grp = NULL;
+        int start = 1;
+        int i;
+        for (i = 1; i != msg.size(); i++) {
+            if(msg[i] == "group") {
+                if(grp != NULL) {
+                    groupname2group[grp->groupname] = grp;
+                }
+                start = i;
+                grp = new group();
+            }
+            else if(start + 1 == i){
+                grp->groupname = msg[i];
+            }
+            else if(start + 1 < i) {
+                grp->users.push_back(msg[i]);
+            }
+        }
+        if(i != 1) {
+            if(grp != NULL) {
+                groupname2group[grp->groupname] = grp;
+            }
+        }
+    }
+}
+
 void chat::all_group_messages(std::vector<std::string> msg){ 
-    std::string curr_username = msg[1];
+    std::string group_name = msg[1];
+    group *grp = groupname2group[group_name];
 
     for(int i = 2; i < msg.size();){
         std::string group_name = msg[i];
@@ -226,7 +252,7 @@ void chat::all_group_messages(std::vector<std::string> msg){
         message curr_msg;
         curr_msg.msg = message_recv;
         curr_msg.username = group_name;
-        group_messages[group_name].push_back(curr_msg);
+        (grp->messages).push_back(curr_msg);
     }
 }
 

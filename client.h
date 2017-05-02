@@ -26,7 +26,8 @@ public:
     std::vector<identity*> all; // Vector containing username of all users who have not blocked this person
     std::vector<identity*> friendRequests; // Vector containing people who sent this person friendRequest
     std::unordered_map<std::string, identity*> username2identity; // username to *identity hash map
-    std::unordered_map<std::string, std::vector<message> > group_messages; // key: group name
+    std::unordered_map<std::string, group*> groupname2group;
+    // std::unordered_map<std::string, std::vector<message> > group_messages; // key: group name
     
     std::thread read_th;
     std::thread write_th;
