@@ -376,6 +376,9 @@ void chat::read_thread()
         else if(messageVector[0] == "newregister") {
             update_new(messageVector);
         }
+        else if(messageVector[0] == "regexists") {
+            std::cout << "Username already exists. Please register with a different username." <<  std::endl;
+        }
     }
 }
 
@@ -448,10 +451,6 @@ void chat::write_thread()
                     printf("Password: ");
                     getline(std::cin, password);
 
-                    while(password.find('#') != std::string::npos){
-                        printf("'#' not allowed. Enter another password.\n");
-                        getline(std::cin, password);
-                    }
                     message.push_back(username);
                     message.push_back(name);
                     message.push_back(password);
@@ -471,6 +470,8 @@ void chat::write_thread()
 
                     write_helper(vector2string(msg));
                 }
+                else
+                    std::cout << "Please login to enjoy Count To Infinity services!" << std::endl;
             }
             else {
                 if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
