@@ -110,6 +110,18 @@ std::vector<identity*> chat::getFriendRequests() {
     return friendRequests;
 }
 
+void chat::update_groups(std::vector<std::string> msg) {
+
+    // std::string group_name = msg[1];
+    // still pending
+}
+
+void chat::update_block(std::vector<std::string> msg) {
+    std::string username = msg[1];
+    identity *id = username2identity[username];
+    id->friendIndicator = 2;
+}
+
 void chat::update_online(std::vector<std::string> msg) // Update vector containing which people are online
 {
     std::string username = msg[1];
@@ -149,10 +161,21 @@ void chat::update_new(std::vector<std::string> msg)
     username2identity[msg[1]] = id;
 }
 
+
 void chat::error(const char *msg)
 {
     perror(msg);
     exit(0);
+}
+
+void remove_from_list(std::vector<identity*> &list, identity* id){
+   auto pos = list.begin();
+    for (;pos != list.end(); pos++) {
+        if(*pos == id) {
+            break;
+        }
+    }
+    list.erase(pos);
 }
 
 void chat::update_friend(std::vector<std::string> msg){
@@ -174,15 +197,12 @@ void chat::updateFriendRequests(std::vector<std::string> msg){
     friendRequests.push_back(id1);
 }
 
-void remove_from_list(std::vector<identity*> list, identity* id){
-   auto pos = list.begin();
-    for (;pos != list.end(); pos++) {
-        if(*pos == id) {
-            break;
-        }
-    }
-    list.erase(pos);
+void chat::removeFriendRequest(std::vector<std::string> msg) {
+    std::string username = msg[1];
+    identity *id1 = username2identity[username];
+    remove_from_list(friendRequests, id1);
 }
+
 
 void chat::blockedYou(std::vector<std::string> msg){
     std::string username = msg[1];
@@ -276,6 +296,7 @@ void chat::read_thread()
             else
                 buffer_str.append(buffer);
         }
+        printf("%s\n", buffer_str.c_str());
         auto messageVector = string2vector(buffer_str);
         if(messageVector[0] == "login") {
             loggedin = true;
@@ -287,6 +308,9 @@ void chat::read_thread()
         else if(messageVector[0] == "logout") {
             printf("You have logged out\n" );
             loggedin = false;
+        }
+        else if(messageVector[0] == "registersuccess") {
+            printf("You have registered successfully \n");
         }
         else if(messageVector[0] == "users") {
             initialise_database(messageVector);
@@ -301,7 +325,7 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "message") {
             std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
-            // update_message();
+            add_message(messageVector);
         }
         else if(messageVector[0] == "sendreq"){
             std:: cout << "You need to send a friend request to " + messageVector[1] + " first" << std::endl;
@@ -317,30 +341,41 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "ublock") {
             std::cout << "You have blocked " + messageVector[1] + ". Type /unblock " + messageVector[1] + " to unblock and start chatting.";
-            
         }
         else if(messageVector[0] == "blocked") {
             std::cout << messageVector[1] + " has been blocked. You will not be able to reach him/her anymore. Use /unblock to unblock" << std::endl;
-            
+            update_block(messageVector);
         }
         else if(messageVector[0] == "unblocked") {
             std::cout << "Unblocked " + messageVector[1] << std::endl;
+            update_friend(messageVector);
         }
         else if(messageVector[0] == "notblocked") {
             std::cout << messageVector[1] + " was never blocked.";
         }
         else if(messageVector[0] == "sentreq") {
             std::cout << "Sent a friend request to " + messageVector[1] << std::endl;
+            
         }
         else if(messageVector[0] == "recvreq") {
             std::cout << "You received a friend request from " + messageVector[1] << std::endl;
+            updateFriendRequests(messageVector);
         }
         else if(messageVector[0] == "accepted") {
             std::cout << "You are now friends with " + messageVector[1] << std::endl;
-
+            update_friend(messageVector);
+            removeFriendRequest(messageVector);
+            update_online(messageVector);
         }
         else if(messageVector[0] == "acceptedyour") {
             std::cout << messageVector[1] + " accepted your friend request" << std::endl;
+            update_friend(messageVector);
+        }
+        else if(messageVector[0] == "groups") {
+            update_groups(messageVector);
+        }
+        else if(messageVector[0] == "newregister") {
+            update_new(messageVector);
         }
     }
 }
@@ -389,7 +424,7 @@ void chat::write_thread()
     {
         bzero(buffer,256);
         std::string endOfMessage = "#";
-        printf("You: ");
+        printf("\nYou: ");
         std::string str_buffer;
 
         getline (std::cin, str_buffer);
@@ -487,12 +522,23 @@ void chat::write_thread()
                     printf("Username: ");
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"unblock", dest})));
-                }
-                else if(command.substr(0, strlen("/unblock")).compare("/unblock") == 0) {
-
-                }
+                } 
                 else if(command.substr(0, strlen("/creategroup")).compare("/creategroup") == 0) {
+                    std::string temp;
+                    std::vector<std::string> messageVector;
+                    messageVector.push_back("creategroup");
+                    printf("Group name: ");
+                    std::cin >> temp;
+                    messageVector.push_back(temp);
+                    printf("Usernames: ");
+                    std::cin >> temp;
 
+                    while(temp != "\\") {
+                        messageVector.push_back(temp);
+                        std::cin >> temp;
+                    }
+
+                    write_helper(vector2string(messageVector));
                 }
                 else if(command.substr(0, strlen("/groupchat")).compare("/groupchat") == 0) {
                     std::string dest;

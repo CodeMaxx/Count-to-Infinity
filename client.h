@@ -21,12 +21,12 @@ public:
 
     // TODO : Make these vectors of identity, vectors of identity so that when one is changed, 
     // it reflects the status all across the database 
-    std::unordered_map<std::string, std::vector<message> > group_messages; // key: group name
     std::vector<identity*> online; // Vector containing username of online friends
     std::vector<identity*> friends; // Vector containing username of all friends
     std::vector<identity*> all; // Vector containing username of all users who have not blocked this person
     std::vector<identity*> friendRequests; // Vector containing people who sent this person friendRequest
     std::unordered_map<std::string, identity*> username2identity; // username to *identity hash map
+    std::unordered_map<std::string, std::vector<message> > group_messages; // key: group name
     
     std::thread read_th;
     std::thread write_th;
@@ -41,7 +41,7 @@ public:
     // void initialise_online(std::vector<std::string> msg); // Initially add all people who are online
     // void initialise_all(std::vector<std::string> msg); // Add all people part of the network
     void initialise_database(std::vector<std::string> msg); // Initializes the database once `all` is filled
-
+    void update_groups(std::vector<std::string> msg); // stores all groups this person belongs to
     std::vector<identity*> getOnlineusers();
     std::vector<identity*> getFriends();
     std::vector<identity*> getAllUsers();
@@ -51,9 +51,11 @@ public:
     void update_offline(std::vector<std::string> msg); // Remove a person if he goes offline
     void update_friend(std::vector<std::string> msg); // Make a person friend
     void update_new(std::vector<std::string> msg); // Add if a new person joins the network
-
+    void update_block(std::vector<std::string> msg); // Updates the edge to blocked
     void updateFriendRequests(std::vector<std::string> msg); // Someone sent a friend request to this person, so update friend
+    void removeFriendRequest(std::vector<std::string> msg); // 
     void blockedYou(std::vector<std::string> msg); // someone blocked you, so you just remove him from all the lists/maps
+
     void all_group_messages(std::vector<std::string> msg);  // _ group name  (username message)
     void all_messages(std::vector<std::string> msg);    // _ username  (username message)
     void add_message(std::vector<std::string> msg); // /message username message 
