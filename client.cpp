@@ -296,7 +296,7 @@ void chat::read_thread()
             else
                 buffer_str.append(buffer);
         }
-        printf("%s\n", buffer_str.c_str());
+        printf("%s\n", buffer_str.c_str()); // TODO in Release
         auto messageVector = string2vector(buffer_str);
         if(messageVector[0] == "login") {
             loggedin = true;
@@ -556,6 +556,12 @@ void chat::write_thread()
 
                 }
 
+            }
+
+            if(command.substr(0, strlen("/exit")).compare("/exit") == 0)
+            {
+                std::cout << "Exiting..." <<  std::endl;
+                exit(0);
             }
 
         }
