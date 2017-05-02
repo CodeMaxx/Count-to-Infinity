@@ -432,6 +432,20 @@ void set_user_online(std::string username, int sockfd, sqlite3* db, char* zErrMs
     }
 }
 
+int check_online(sqlite3* db, char* zErrMsg, std::string user){
+    std::string query = "SELECT username FROM users WHERE username = '" + user + "'";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+    if(result == SQLITE_OK) {
+        if(sqlite3_step(selectstmt) == SQLITE_ROW) {
+            return true;
+        }
+        else
+            return false;
+    }
+    else
+        return false;
+}
 
 // Check the relationship between two users in the social graph
 int check_friend(sqlite3* db, char* zErrMsg, std::string user1, std::string user2){
@@ -537,6 +551,8 @@ std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg, std::string u
             if(r == 0)
             {
                 user_vector.push_back(get_timestamp(db, zErrMsg, username));
+                bool b = check_online(db, zErrMsg, username);
+                user_vector.push_back(std::to_string((int) b));
             }
         }
     }
@@ -970,7 +986,7 @@ std::string get_group_name_from_id(sqlite3* db, char* zErrMsg, int group_chat_id
 
 std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std::string username){
     std::vector<std::string> group_name_vec;
-
+    group_name_vec.push_back("groups");
     std::string query = "Select * from chats_users_xref where username = '" + username +"'";
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
@@ -1157,15 +1173,10 @@ void control_thread() {
                         set_user_online(messageVector[1], sockfd, db, zErrMsg);
                         write_to_socket(sockfd, ans);
 
-                        std::vector<std::string> userlist = get_online_users(db, zErrMsg, messageVector[1]);
-                        write_to_socket(sockfd,vector2string(userlist));
-                        std::vector<std::string> friends = get_friends(db, zErrMsg, messageVector[1]);
-                        write_to_socket(sockfd,vector2string(userlist));
                         std::vector<std::string> all_users = get_all_users(db, zErrMsg, messageVector[1]);
-                        write_to_socket(sockfd,vector2string(userlist));
-
-
-
+                        write_to_socket(sockfd,vector2string(all_users));
+                        std::vector<std::string> all_groups = get_groups_for_username(db, zErrMsg, messageVector[1]);
+                        write_to_socket(sockfd,vector2string(all_groups));
                     }
                     else {
                         // tell client wrong pass

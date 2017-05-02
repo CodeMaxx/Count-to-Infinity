@@ -27,3 +27,18 @@ struct identity
     }
 };
 
+struct group
+{
+    std::string groupname;
+    std::vector<std::string> users;
+    std::vector<message> messages;
+
+    group() {
+
+    }
+
+    group(std::string groupname, std::vector<std::string> users) {
+        this->groupname = groupname;
+        this->users = users;
+    }
+};
