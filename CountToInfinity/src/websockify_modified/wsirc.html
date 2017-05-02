@@ -1,0 +1,375 @@
+<html>
+
+    <head>
+        <title>IRC Client using WebSockets</title>
+        <script src="include/websock.js"></script>
+        <script src="include/util.js"></script>
+        <script src="include/webutil.js"></script> 
+        <script src="include/keysym.js"></script> 
+        <script src="include/VT100.js"></script> 
+        <script src="include/wsirc.js"></script> 
+        <!-- Uncomment to activate firebug lite -->
+        <!--
+        <script type='text/javascript' 
+            src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+        -->
+
+        <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <!--Import materialize.css-->
+      <link type="text/css" rel="stylesheet" href="css/materialize.css"  media="screen,projection"/>
+
+      <!--Let browser know website is optimized for mobile-->
+      
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+
+    </head>
+
+    <body>
+
+      <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+      <script type="text/javascript" src="js/materialize.js"></script>
+
+      <input id='host' style='display: none;width:100' >&nbsp;
+      <input id='port' style='display: none;width:50'>&nbsp;
+      <input id='encrypt' type='checkbox' style='display: none'>&nbsp;
+      <!--<input id='connectButton' type='button' value='Connect' style='width:100px'> -->
+      <br>
+      <input id='nick' style='display: none;width:120'>&nbsp;
+      <br>
+      <input id='channel' style='display: none;width:70'>&nbsp;
+
+      <br><br>
+
+      <div><pre id="irc" style='display: none'></pre></div>
+      &gt;
+      <input id="msg" type="text" size=80 style='display: none' onkeypress="sendMsg();">
+
+      <center>
+        <div class="section"></div>
+
+        <div class="section"></div>
+
+        <div id="loginform" class="container">
+          <div class="z-depth-1 grey lighten-4 row" style="display: inline-block; padding: 32px 48px 0px 48px; border: 1px solid #EEE;">
+
+            <form class="col s12" method="post" onsubmit="connect(); return false;">
+              <div class='row'>
+                <div class='col s12'>
+                </div>
+              </div>
+
+              <div class='row'>
+                <div class='input-field col s12'>
+                  <input class='validate' type='text' name='username' id='unamelogin' />
+                  <label for='email'>Username</label>
+                </div>
+              </div>
+
+              <div class='row'>
+                <div class='input-field col s12'>
+                  <input class='validate' type='password' name='password' id='pwdlogin' />
+                  <label for='password'>Password</label>
+                </div>
+                <label style='float: right;'>
+                                  <a class='pink-text' href='forgotpassword.html'><b>Forgot Password?</b></a>
+                              </label>
+              </div>
+
+              <br />
+              <center>
+                <div class='row'>
+                  <button id='connectButton' type='submit' value='Connect' style='width:100px'>Login</button>
+                </div>
+              </center>
+            </form>
+          </div>
+          <br>
+          <br>
+          <button id='registerbutton' style='width:100px'>Create Account</button>
+        </div>
+        
+      </center>
+
+
+
+      <center>
+        <div class="section"></div>
+
+        <div class="section"></div>
+
+        <div id="registerform" class="container">
+          <div class="z-depth-1 grey lighten-4 row" style="display: inline-block; padding: 32px 48px 0px 48px; border: 1px solid #EEE;">
+
+            <form class="col s12" method="post" onsubmit="registerhandle(); return false;">
+              <div class='row'>
+                <div class='col s12'>
+                </div>
+              </div>
+
+              <div class='row'>
+                <div class='input-field col s12'>
+                  <input class='validate' type='text' name='name' id='nameregister' />
+                  <label for='email'>Name</label>
+                </div>
+              </div>
+
+              <div class='row'>
+                <div class='input-field col s12'>
+                  <input class='validate' type='text' name='userame' id='unameregister' />
+                  <label for='email'>Username</label>
+                </div>
+              </div>
+
+              <div class='row'>
+                <div class='input-field col s12'>
+                  <input class='validate' type='password' name='password' id='pwdresgister' />
+                  <label for='password'>Password</label>
+                </div>
+                <label style='float: right;'>
+                                  <div class='pink-text'></div>
+                              </label>
+              </div>
+
+              <br />
+              <center>
+                <div class='row'>
+                  <button id='connectButton' type='submit' value='Connect' style='width:100px'>Register</button>
+
+                  <!-- <button type='submit' id= 'connectButton' name='btn_login' class='col s12 btn btn-large waves-effect indigo'>Register</button> -->
+                </div>
+              </center>
+            </form>
+          </div>
+        </div>
+      </center>
+
+      <center>
+        <div id="back">
+          <button id='backbutton' style='width:100px'>Go Back To Login</button>
+        </div>
+      </center>
+
+
+
+
+    <div id="chat">
+      <nav>
+          <div class="nav-wrapper indigo">
+            <ul id="nav-mobile" class="right hide-on-med-and-down">
+              <li><button id='logoutbutton' class= "indigo" style='width:100px'>Logout</button></li>
+            </ul>
+          </div>
+      </nav>
+
+      <div class="section"></div>
+      <div class="section"></div>
+
+      <div class="row">
+
+          <div class="col s6">
+              <div class="row">
+               <form class="col s12">
+                  <div class="row">
+                     <select class="browser-default" id="collection_online">
+                        <option value="" disabled selected>Select user to send message</option>
+                        <option value="1" id="Alvin">Alvin</option>
+                        <option value="2" id="Ajay">Ajay</option>
+                     </select>
+                  </div>
+             </div>
+          </div>
+
+
+          <div class="col s6">
+            <section id="wrapper">
+
+              <header>
+                <h3>Welcome to chat!</h3>
+              </header>
+
+              <div id="messages">
+              </div>
+
+              <article>
+                <form onsubmit="addMessage(); return false;">
+                  <input type="text" id="chatmsg" placeholder="type the message here and press enter to sent" onkeypress="sendMsg();" />
+                </form>
+              </article>
+            </section>
+          </div>
+      </div>
+    </div>
+
+
+
+
+      
+
+        <script>
+            $('#registerform').hide();
+            $('#back').hide();
+            $('#chat').hide();
+
+            var irc;
+            var host_val = "localhost";
+            var port_val = "5006";
+            
+            document.getElementById('host').defaultValue = "localhost";
+            document.getElementById('port').defaultValue = "5006"; 
+
+            $('#registerbutton').click(function(){
+              $('#loginform').hide();
+              $('#registerform').show();
+              $('#back').show();
+            });
+
+            $('#backbutton').click(function(){
+              $('#registerform').hide();
+              $('#loginform').show();
+              $('#back').hide();
+            });
+
+            $('#logoutbutton').click(function(){
+              window.location.href = "wsirc.html";
+            });
+
+            function sendMsg() {
+                if (event.keyCode === 13) {
+
+                    var msg = $D('chatmsg').value;
+                    $D('chatmsg').value = "";
+                    var username = $('#collection_online').val();
+                    $('$messages').append('You: '+ msg+'<br>');
+                    arr = ["message", username, msg];
+                    var finalmsg = vector2string(arr);
+                    Util.Debug("calling sendMsg('" + finalmsg + "')");
+                    irc.sendMsg(finalmsg);
+                }
+            }
+
+            function incomplete_form(){
+              alert("Enter username and password");
+              window.location.href = "wsirc.html";
+            }
+
+
+            function vector2string(v) { // converts vector of strings to a string that
+                var ret = "/";                              // fits our protocol
+                for (var i = 0; i < v.length; i++) {
+                    ret += escape_special_chars(v[i]) + ':';
+                }
+                ret.slice(0,-1);
+                ret = ret + "#";
+                return ret;
+            }
+
+            function escape_special_chars(msg) {
+                for(var i = 0; i != msg.length; i++) {
+                    if(msg[i] == ':' || msg[i] == '#' || msg[i] == '~' || msg[i] == '\\') {
+                        msg = msg.splice(0,i) +  "\\" + msg.splice(i, msg.length);
+                        i++;
+                    }
+                }
+                return msg;
+            }
+
+            function connect() {
+                var ret;
+                ret  = irc.connect(host_val,
+                                   port_val,
+                                   $D('encrypt').checked,
+                                   $D('nick').value,
+                                   $D('channel').value);
+                if (! ret) { return false; }
+                $D('connectButton').disabled = true;
+                $D('connectButton').value = "Connecting";
+
+                var username = $D('unamelogin').value;
+                var pwd = $D('pwdlogin').value;
+
+                if(username.length === 0 || pwd.length === 0 ){
+                  incomplete_form();
+                }
+                else{
+                    var arr = ["login", username, pwd];
+                    var msg = vector2string(arr);
+
+                    Util.Debug("calling sendMsg('" + msg + "')");
+                    irc.sendMsg(msg);
+                }
+            }
+
+            function registerhandle() {
+                var ret;
+                ret  = irc.connect(host_val,
+                                   port_val,
+                                   $D('encrypt').checked,
+                                   $D('nick').value,
+                                   $D('channel').value);
+                if (! ret) { return false; }
+
+                $D('connectButton').disabled = true;
+                $D('connectButton').value = "Connecting";
+                var username = $D('unameregister').value;
+                var pwd = $D('pwdregister').value;
+                var name = $D('nameregister').value;
+
+                if(username.length === 0 || pwd.length === 0 || name.length === 0 ){
+                  incomplete_form();
+                }
+                else{
+                    var arr = ["register", username, name, pwd];
+                    var msg = vector2string(arr);
+                    
+                    Util.Debug("calling sendMsg('" + msg + "')");
+                    irc.sendMsg(msg);
+
+                    var arr1 = ["login", username, pwd];
+
+                    var msg1 = vector2string(arr1);
+
+                    Util.Debug("calling sendMsg('" + msg1 + "')");
+                    irc.sendMsg(msg1);
+
+                }
+            }
+
+            function disconnect() {
+                $D('connectButton').disabled = true;
+                $D('connectButton').value = "Disconnecting";
+                irc.disconnect();
+            }
+
+            function connected() {
+                /*$D('msg').disabled = false;
+                $D('connectButton').disabled = false;
+                $D('connectButton').value = "Disconnect";
+                $D('connectButton').onclick = disconnect;*/
+
+            }
+
+            function disconnected() {
+                $D('msg').disabled = true;
+                $D('connectButton').disabled = false;
+                $D('connectButton').value = "Connect";
+                $D('connectButton').onclick = connect;
+            }
+
+            window.onload = function() {
+                console.log("onload");
+                var url = document.location.href;
+                $D('host').value = (url.match(/host=([^&#]*)/) || ['',''])[1];
+                $D('port').value = (url.match(/port=([^&#]*)/) || ['',''])[1];
+                $D('nick').value = (url.match(/nick=([^&#]*)/) || ['',''])[1];
+                $D('channel').value = (url.match(/channel=([^&#]*)/) || ['',''])[1];
+
+                disconnected();
+                
+                irc = IRC('irc', connected, disconnected);
+            }
+        </script>
+
+    </body>
+
+</html>

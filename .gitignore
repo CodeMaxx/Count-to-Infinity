@@ -6,4 +6,4 @@ a.out
 test_ldap*
 .gdb*
 peda*
-
+main.db

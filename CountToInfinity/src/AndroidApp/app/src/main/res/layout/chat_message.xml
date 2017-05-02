@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <Button
+        android:id="@+id/messageText"
+        android:padding="@dimen/message_padding"
+        android:layout_marginLeft="@dimen/message_margin"
+        android:layout_marginRight="@dimen/message_margin"
+        android:layout_marginBottom="@dimen/message_margin"
+        android:layout_marginTop="@dimen/message_margin"
+        android:textColor="@color/primaryText"
+        android:layout_margin="@dimen/message_margin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/rounded_button"
+        />
+</LinearLayout>
