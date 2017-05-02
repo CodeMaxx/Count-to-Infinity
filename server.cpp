@@ -762,6 +762,29 @@ void accept_friend_req(sqlite3* db, char* zErrMsg, std::string user1, std::strin
     }
 }
 
+//reject friend request
+void reject_friend_req(sqlite3* db, char* zErrMsg, std::string user1, std::string user2) {
+    std::string query = "DELETE from friends WHERE user1 = '" + user1 + "' and user2 = '" + user2 +"'";
+
+    int rc;
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
+
+    query = "DELETE from friends WHERE user1 = '" + user2 + "' and user2 = '" + user1 +"'";
+
+    rc = sqlite3_exec(db, query.c_str(), callback, 0, &zErrMsg);
+    fprintf(stderr, "%s\n", query.c_str());
+    if( rc != SQLITE_OK ) {
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+}
+
 
 // Add message to database and chat
 void add_message_to_database(sqlite3* db, char* zErrMsg, std::string message, std::string receiver, std::string sender) {
@@ -984,10 +1007,11 @@ std::string get_group_name_from_id(sqlite3* db, char* zErrMsg, int group_chat_id
 }
 
 
+
 std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std::string username){
     std::vector<std::string> group_name_vec;
     group_name_vec.push_back("groups");
-    std::string query = "Select * from chats_users_xref where username = '" + username +"'";
+    std::string query = "Select * from chats_users_xref where and username = '" + username +"'";
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
 
@@ -995,7 +1019,9 @@ std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std
        while (sqlite3_step(selectstmt) == SQLITE_ROW){
             int group_chat_id = sqlite3_column_int(selectstmt, 1);
             std::string gp_name = get_group_name_from_id(db, zErrMsg, group_chat_id);
-            group_name_vec.push_back(gp_name);
+            if(gp_name != "individual_chat"){
+                group_name_vec.push_back(gp_name);
+            }
        }
     }
     return group_name_vec;
@@ -1012,6 +1038,45 @@ void add_to_group_chat(sqlite3* db, char* zErrMsg, std::string group_name, std::
     }
 
 }
+
+//get list of users in a group
+std::vector<std::string> get_user_list_for_group(sqlite3* db, char* zErrMsg, std::string group_name){
+    std::vector<std::string> user_list;
+    int group_chat_id = get_group_id_from_name(db, zErrMsg, group_name);
+
+    std::string query = "Select * from chats_users_xref where chat_id = '" + std::to_string(group_chat_id) +"'";
+    struct sqlite3_stmt *selectstmt;
+    int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
+
+    if(result == SQLITE_OK){
+       while (sqlite3_step(selectstmt) == SQLITE_ROW){
+            user_list.push_back((char*)sqlite3_column_text(selectstmt, 0));
+       }
+    }
+}
+
+//get list of group names and list of members of group corresponding to username
+std::vector<std::string> get_group_name_and_user_list(sqlite3* db, char* zErrMsg, std::string username){
+    std::vector<std::string> ans_list;
+    ans_list.push_back("groups");
+
+    std::vector<std::string> group_name_list = get_groups_for_username(db, zErrMsg, username);
+
+    std::vector<int>::size_type sz = group_name_list.size();
+
+    for(int i = 0; i < sz ; i++){
+        int group_chat_id = get_group_id_from_name(db, zErrMsg, group_name_list[i]);
+        ans_list.push_back("group");
+        ans_list.push_back(group_name_list[i]);
+
+        std::vector<std::string> user_list = get_user_list_for_group(db, zErrMsg, group_name_list[i]);
+        std::vector<int>::size_type sz1 = user_list.size();
+        for(int j = 0; j < sz1 ; j++){
+            ans_list.push_back(user_list[j]);
+        }
+    }
+}
+
 
 
 
