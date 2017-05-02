@@ -53,9 +53,8 @@ public:
     void update_new(std::vector<std::string> msg); // Add if a new person joins the network
     void update_block(std::vector<std::string> msg); // Updates the edge to blocked
     void updateFriendRequests(std::vector<std::string> msg); // Someone sent a friend request to this person, so update friend
-    void removeFriendRequest(std::vector<std::string> msg);
+    void removeFriendRequest(std::vector<std::string> msg); // 
     void blockedYou(std::vector<std::string> msg); // someone blocked you, so you just remove him from all the lists/maps
-
 
     void all_group_messages(std::vector<std::string> msg);  // _ group name  (username message)
     void all_messages(std::vector<std::string> msg);    // _ username  (username message)
