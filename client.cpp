@@ -494,6 +494,9 @@ void chat::read_thread()
         else if(messageVector[0] == "groups") {
             update_groups(messageVector);
         }
+        else if(messageVector[0] == "group") {
+            // update_group(messageVector);
+        }
         else if(messageVector[0] == "newregister") {
             update_new(messageVector);
         }
