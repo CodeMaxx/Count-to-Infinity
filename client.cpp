@@ -564,7 +564,7 @@ void chat::print_help() {
     
 
     std::cout << termcolor::yellow<<"-----> Chat (one - one) <----- \n"; 
-    std::cout << termcolor::yellow<<"/chat [Friend's Username] - To chat with a friend\n";
+    std::cout << termcolor::yellow<<"/chat - To chat with a friend\n";
     std::cout << termcolor::yellow<<"/showall - Lists all registered users\n";
     std::cout << termcolor::yellow<<"/showOnline - Lists all online users\n";
     std::cout << termcolor::yellow<<"/showFriends - Lists your friends\n";
@@ -713,7 +713,7 @@ void chat::write_thread()
             else {
                 if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
                     isGroup = false;
-                    std::cout << termcolor::on_blue << "";"Friend's username: ";
+                    std::cout << termcolor::on_blue <<"Friend's username: ";
                     std::cout << termcolor::reset << "";
                     getline(std::cin, dest_username);
                     write_helper(vector2string(std::vector<std::string>({"getmessages", dest_username})));
