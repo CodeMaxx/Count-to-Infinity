@@ -111,7 +111,8 @@ std::vector<identity*> chat::getFriendRequests() {
 }
 
 void chat::update_groups(std::vector<std::string> msg) {
-    std::string group_name = msg[1];
+
+    // std::string group_name = msg[1];
     // still pending
 }
 
@@ -167,6 +168,16 @@ void chat::error(const char *msg)
     exit(0);
 }
 
+void remove_from_list(std::vector<identity*> list, identity* id){
+   auto pos = list.begin();
+    for (;pos != list.end(); pos++) {
+        if(*pos == id) {
+            break;
+        }
+    }
+    list.erase(pos);
+}
+
 void chat::update_friend(std::vector<std::string> msg){
     std::string username = msg[1];
     identity* id_fr = username2identity[username];
@@ -186,16 +197,12 @@ void chat::updateFriendRequests(std::vector<std::string> msg){
     friendRequests.push_back(id1);
 }
 
-
-void remove_from_list(std::vector<identity*> list, identity* id){
-   auto pos = list.begin();
-    for (;pos != list.end(); pos++) {
-        if(*pos == id) {
-            break;
-        }
-    }
-    list.erase(pos);
+void chat::removeFriendRequest(std::vector<std::string> msg) {
+    std::string username = msg[1];
+    identity *id1 = username2identity[username];
+    remove_from_list(friendRequests, id1);
 }
+
 
 void chat::blockedYou(std::vector<std::string> msg){
     std::string username = msg[1];
@@ -301,6 +308,9 @@ void chat::read_thread()
             printf("You have logged out\n" );
             loggedin = false;
         }
+        else if(messageVector[0] == "registersuccess") {
+            printf("You have registered successfully \n");
+        }
         else if(messageVector[0] == "users") {
             initialise_database(messageVector);
         }
@@ -353,6 +363,7 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "accepted") {
             std::cout << "You are now friends with " + messageVector[1] << std::endl;
+            removeFriendRequest(messageVector);
             update_friend(messageVector);
         }
         else if(messageVector[0] == "acceptedyour") {
@@ -361,6 +372,9 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "groups") {
             update_groups(messageVector);
+        }
+        else if(messageVector[0] == "newregister") {
+            update_new(messageVector);
         }
     }
 }
