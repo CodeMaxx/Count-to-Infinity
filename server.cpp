@@ -40,33 +40,62 @@ lockless_queue<std::vector<std::string>> control_thread_queue;
 
 std::set<int> logged_in_sockets;
 
+
+// Display and explain errors
+void error(const char *msg) {
+    perror(msg);
+}
+
+
 // Login from LDAP server
 bool ldap_login(std::string cn, std::string pass) {
     LDAP *ld;
-    int  result;
-    int  auth_method    = LDAP_AUTH_SIMPLE;
+    int result;
+    int auth_method = LDAP_AUTH_SIMPLE;
     int desired_version = LDAP_VERSION3;
-    char ldap_host[24]     = "cs252lab.cse.iitb.ac.in";
+    char ldap_host[24] = "cs252lab.cse.iitb.ac.in";
     std::string root_dn = "cn=" + cn + ", dc=cs252lab, dc=cse, dc=iitb, dc=ac, dc=in";
     std::string root_pwd = pass;
 
-   
-    if ((ld = ldap_init(ldap_host, LDAP_PORT)) == NULL ) {
-        perror( "ldap_init failed" );
-        exit( EXIT_FAILURE );
+
+    if ((ld = ldap_init(ldap_host, LDAP_PORT)) == NULL) {
+        perror("ldap_init failed");
+        exit(EXIT_FAILURE);
     }
 
-    if (ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &desired_version) != LDAP_OPT_SUCCESS)
-    {
+    if (ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &desired_version) != LDAP_OPT_SUCCESS) {
         ldap_perror(ld, "ldap_set_option failed!");
         exit(EXIT_FAILURE);
     }
 
-    if (ldap_bind_s(ld, root_dn.c_str(), root_pwd.c_str(), auth_method) != LDAP_SUCCESS )
+    if (ldap_bind_s(ld, root_dn.c_str(), root_pwd.c_str(), auth_method) != LDAP_SUCCESS)
         return false;
     else
         return true;
 }
+
+
+// Writing to users
+void write_to_socket(int newsockfd, std::string data) {
+    int n;
+    char buffer[256];
+    while(data.size() > 256)
+    {
+        strncpy(buffer, data.c_str(), 256);
+        std::cout << "Wrting to socket :" << buffer << std::endl;
+        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
+        if (n < 0) error("ERROR writing to socket");
+        else data.erase(0, 256);
+    }
+    if(data.size() > 0) {
+        strcpy(buffer, data.c_str());
+        std::cout << "Wrting to socket :" << buffer << std::endl;
+        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
+        if (n < 0) error("ERROR writing to socket");
+    }
+
+}
+
 
 // Hash a password to get hash and salt
 std::pair<std::string, std::string> hash_password(std::string password) {
@@ -117,12 +146,6 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
     }
    printf("\n");
    return 0;
-}
-
-
-// Display and explain errors
-void error(const char *msg) {
-    perror(msg);
 }
 
 
@@ -187,6 +210,10 @@ std::string login_func(std::vector<std::string> vec_login,sqlite3* db, char* zEr
                 else
                 {
                     fprintf(stdout, "LDAP user added to table\n");
+                    for(auto sock: logged_in_sockets)
+                    {
+                        write_to_socket(sock, vector2string({"newregister", vec_login[1], vec_login[1]}));
+                    }
                 }
             }
         }
@@ -356,12 +383,12 @@ std::string get_username(int sockfd, sqlite3* db, char* zErrMsg) {
     if(result == SQLITE_OK) {
         if (sqlite3_step(selectstmt) == SQLITE_ROW) {
             std::string username = (char *) sqlite3_column_text(selectstmt, 0);
-            std::cout << "Username : " << username << std::endl; 
+            std::cout << "Username : " << username << std::endl;
             return username;
         }
         else {
             std::cout << "No such Socket" << std::endl;
-        } 
+        }
     }
     else {
         std::cout << "Error getting username from socket" << std::endl;
@@ -381,15 +408,15 @@ int get_socket(std::string username, sqlite3* db, char* zErrMsg) {
         if (sqlite3_step(selectstmt) == SQLITE_ROW) {
             int socket = (int) sqlite3_column_int(selectstmt, 0);
             int online = (int) sqlite3_column_int(selectstmt, 1);
-            std::cout << "Online : " << online << std::endl; 
+            std::cout << "Online : " << online << std::endl;
             std::cout << "Socket : " << socket << std::endl << std::endl;
             if(online) {
                 return socket;
-            } 
+            }
         }
         else {
             std::cout << "No such person" << std::endl;
-        } 
+        }
     }
     sqlite3_finalize(selectstmt);
     return 0;
@@ -531,7 +558,7 @@ std::vector<std::string> get_online_users(sqlite3* db, char* zErrMsg, std::strin
     }
     sqlite3_finalize(selectstmt);
     return user_vector;
-}   
+}
 
 
 // Get a vector containing all users (username name friend_status)
@@ -558,7 +585,7 @@ std::vector<std::string> get_all_users(sqlite3* db, char* zErrMsg, std::string u
     }
     sqlite3_finalize(selectstmt);
     return user_vector;
-}   
+}
 
 
 // Get friends of a particular person
@@ -906,7 +933,7 @@ bool user_in_group(sqlite3* db, char* zErrMsg, std::string group_name, std::stri
 
 // send a message to a group chat
 // vector of msg_group, groupname, username, msg implementation
-// check if username and grpup name aren't "" 
+// check if username and grpup name aren't ""
 std::vector<std::string> send_group(sqlite3* db, char* zErrMsg, std::string group_name, std::string message, std::string username){
     int group_chat_id;
     std::vector<std::string> username_vector;
@@ -1094,15 +1121,15 @@ void read_thread(int newsockfd) {
         n = read(newsockfd,buffer,255); // Putting data from socket to buffer
         if (n < 0)
             error("ERROR reading from socket");
-        else if (n == 0) { // client closed connection 
+        else if (n == 0) { // client closed connection
             std::vector<std::string> closedMessage({"closed", std::to_string(newsockfd)});
             control_thread_queue.produce(closedMessage);
             break;
-        }            
+        }
         else
             buffer_str = buffer;
 
-        std::cout << buffer_str << std::endl; 
+        std::cout << buffer_str << std::endl;
 
         int find_pos = 0;
         bool endOfMessageFound = 0;
@@ -1140,28 +1167,6 @@ void read_thread(int newsockfd) {
         control_thread_queue.produce(messageVector);
 
     }
-}
-
-
-// Writing to users
-void write_to_socket(int newsockfd, std::string data) {
-    int n;
-    char buffer[256];
-    while(data.size() > 256)
-    {
-        strncpy(buffer, data.c_str(), 256);
-        std::cout << "Wrting to socket :" << buffer << std::endl;
-        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
-        if (n < 0) error("ERROR writing to socket");
-        else data.erase(0, 256);
-    }
-    if(data.size() > 0) {
-        strcpy(buffer, data.c_str());
-        std::cout << "Wrting to socket :" << buffer << std::endl;
-        n = write(newsockfd,buffer,strlen(buffer)); // Writing to socket
-        if (n < 0) error("ERROR writing to socket");
-    }
-
 }
 
 
@@ -1219,7 +1224,7 @@ void control_thread() {
                     }
                     if(register_func(messageVector, db, zErrMsg))
                     {
-                        write_to_socket(sockfd, vector2string({"registersucess"}));
+                        write_to_socket(sockfd, vector2string({"registersuccess"}));
                         for(auto sock: logged_in_sockets)
                         {
                             write_to_socket(sock, vector2string({"newregister", messageVector[1], messageVector[2]}));
@@ -1227,7 +1232,7 @@ void control_thread() {
                     }
                     else
                     {
-                        write_to_socket(sockfd, "Username already exists. Please register with a different username.");
+                        write_to_socket(sockfd, vector2string({"regexists"}));
                     }
                 }
                 else if(messageVector[0] == "login")
