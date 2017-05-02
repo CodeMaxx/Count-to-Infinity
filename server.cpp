@@ -1380,6 +1380,21 @@ void control_thread() {
                         }
                     }
                 }
+                else if(messageVector[0] == "reject") // Reject friend request
+                {
+                    std::string source;
+                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
+                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
+                        if(check == -1) {
+                            // Reject Friend Request
+                            int destsockfd;
+                            destsockfd = get_socket(messageVector[1], db, zErrMsg);
+                            reject_friend_req(db, zErrMsg, source, messageVector[1]);
+                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"rejected", messageVector[1]})));
+                            write_to_socket(destsockfd, vector2string(std::vector<std::string>({"rejectedyour", source})));
+                        }
+                    }
+                }
                 else if(messageVector[0] == "getmessages") // Get all messages for a user
                 {
                     std::string source;

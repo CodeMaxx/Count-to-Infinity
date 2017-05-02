@@ -371,6 +371,13 @@ void chat::read_thread()
             std::cout << messageVector[1] + " accepted your friend request" << std::endl;
             update_friend(messageVector);
         }
+        else if(messageVector[0] == "rejected") {
+            std::cout << "Rejected friend request from " + messageVector[1] << std::endl;
+            removeFriendRequest(messageVector);
+        }
+        else if(messageVector[0] == "rejectedyour") {
+            std::cout << messageVector[1] + " rejected your friend request" << std::endl;
+        }
         else if(messageVector[0] == "groups") {
             update_groups(messageVector);
         }
@@ -406,6 +413,7 @@ void chat::print_help() {
     printf("-----> Friend Requests / Blocking <----- \n"); 
     printf("/friend [username] - Send a friend request to [username] \n");
     printf("/accept [username] - Accepts the friend request from [username] \n");
+    printf("/reject [username] - Reject friend request from [username] \n");
     printf("/block [username] - Blocks [username] \n");
     printf("/unblock [username] - Unblocks [username] \n");
     
@@ -559,6 +567,12 @@ void chat::write_thread()
                     printf("Username: ");
                     std::cin >> dest;
                     write_helper(vector2string(std::vector<std::string>({"accept", dest})));
+                }
+                else if(command.substr(0, strlen("/reject")).compare("/reject") == 0) {
+                    std::string dest;
+                    printf("Username: ");
+                    std::cin >> dest;
+                    write_helper(vector2string(std::vector<std::string>({"reject", dest})));
                 }
                 else if(command.substr(0, strlen("/block")).compare("/block") == 0) {
                     std::string dest;
