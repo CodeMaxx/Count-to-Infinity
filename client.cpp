@@ -412,7 +412,7 @@ void chat::read_thread()
             else
                 buffer_str.append(buffer);
         }
-        printf("%s\n", buffer_str.c_str()); // TODO in Release
+        // printf("%s\n", buffer_str.c_str()); // TODO in Release
         auto messageVector = string2vector(buffer_str);
         if(messageVector[0] == "login") {
             loggedin = true;
