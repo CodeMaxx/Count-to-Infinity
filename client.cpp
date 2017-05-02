@@ -573,7 +573,7 @@ void chat::print_help() {
     std::cout << termcolor::yellow<<"-----> Groups <----- \n"; 
     std::cout << termcolor::yellow<<"/showgroups - Lists all groups you are in \n";
     std::cout << termcolor::yellow<<"/creategroup [username(s)] - Creates a group containing [username(s)] \n";
-    std::cout << termcolor::yellow<<"/groupchat - Lists all online users \n";
+    std::cout << termcolor::yellow<<"/groupchat - Starts a group chat \n";
     std::cout << termcolor::yellow<<"/leavegroup - Leave the group \n\n";
 
     std::cout << termcolor::yellow<<"-----> Friend Requests / Blocking <----- \n"; 
