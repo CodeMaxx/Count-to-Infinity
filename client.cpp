@@ -213,6 +213,22 @@ void chat::remove_from_group(std::vector<std::string> msg){ // leavegroup groupn
     }
     (grp->users).erase(pos);
 }
+
+void chat::remove_group(std::vector<std::string> msg){ // left groupname
+    std::string groupname = msg[1];
+    group* grp = groupname2group[groupname];
+    auto pos = all_groups.begin();
+    for (;pos != all_groups.end(); pos++) {
+        if(*pos == grp) {
+            break;
+        }
+    }
+    all_groups.erase(pos);
+    groupname2group.erase(groupname);
+
+    delete grp;
+}
+
 void chat::error(const char *msg)
 {
     perror(msg);
@@ -453,6 +469,9 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "leavegroup"){
             remove_from_group(messageVector);
+        }
+        else if(messageVector[0] == "left"){
+            remove_group(messageVector);
         }
         else if(messageVector[0] == "sendreq"){
             std:: cout <<termcolor::red<< "You need to send a friend request to " + messageVector[1] + " first";
