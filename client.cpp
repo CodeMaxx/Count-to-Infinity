@@ -196,17 +196,38 @@ void chat::update_group(std::vector<std::string> msg){
     for(int i = 2; i < msg.size(); i++){
         grp_users.push_back(msg[i]);
     }
+
     group * grp = new group(group_name, grp_users);
     groupname2group[group_name] = grp;
 
 }
 
-void chat::remove_from_group(std::vector<std::string> msg){
-
+void chat::remove_from_group(std::vector<std::string> msg){ // leavegroup groupname username
+    std::string groupname = msg[1];
+    std::string user = msg[2];
+    group* grp = groupname2group[groupname];
+    auto pos = (grp->users).begin();
+    for (;pos != (grp->users).end(); pos++) {
+        if(*pos == user) {
+            break;
+        }
+    }
+    (grp->users).erase(pos);
 }
 
-void chat::remove_group(std::vector<std::string> msg) {
+void chat::remove_group(std::vector<std::string> msg){ // left groupname
+    std::string groupname = msg[1];
+    group* grp = groupname2group[groupname];
+    auto pos = all_groups.begin();
+    for (;pos != all_groups.end(); pos++) {
+        if(*pos == grp) {
+            break;
+        }
+    }
+    all_groups.erase(pos);
+    groupname2group.erase(groupname);
 
+    delete grp;
 }
 
 void chat::error(const char *msg)
@@ -455,6 +476,12 @@ void chat::read_thread()
         else if(messageVector[0] == "updategroup") {
             update_group(messageVector);
         }
+        else if(messageVector[0] == "leavegroup"){
+            remove_from_group(messageVector);
+        }
+        else if(messageVector[0] == "left"){
+            remove_group(messageVector);
+        }
         else if(messageVector[0] == "sendreq"){
             std:: cout <<termcolor::red<< "You need to send a friend request to " + messageVector[1] + " first";
             std::cout << termcolor::reset << "\n";
@@ -549,7 +576,7 @@ void chat::print_help() {
     
 
     std::cout << termcolor::yellow<<"-----> Chat (one - one) <----- \n"; 
-    std::cout << termcolor::yellow<<"/chat [Friend's Username] - To chat with a friend\n";
+    std::cout << termcolor::yellow<<"/chat - To chat with a friend\n";
     std::cout << termcolor::yellow<<"/showall - Lists all registered users\n";
     std::cout << termcolor::yellow<<"/showOnline - Lists all online users\n";
     std::cout << termcolor::yellow<<"/showFriends - Lists your friends\n";
@@ -558,7 +585,7 @@ void chat::print_help() {
     std::cout << termcolor::yellow<<"-----> Groups <----- \n"; 
     std::cout << termcolor::yellow<<"/showgroups - Lists all groups you are in \n";
     std::cout << termcolor::yellow<<"/creategroup [username(s)] - Creates a group containing [username(s)] \n";
-    std::cout << termcolor::yellow<<"/groupchat - Lists all online users \n";
+    std::cout << termcolor::yellow<<"/groupchat - Starts a group chat \n";
     std::cout << termcolor::yellow<<"/leavegroup - Leave the group \n\n";
 
     std::cout << termcolor::yellow<<"-----> Friend Requests / Blocking <----- \n"; 
@@ -698,7 +725,7 @@ void chat::write_thread()
             else {
                 if(command.substr(0, strlen("/chat")).compare("/chat") == 0){
                     isGroup = false;
-                    std::cout << termcolor::on_blue << "";"Friend's username: ";
+                    std::cout << termcolor::on_blue <<"Friend's username: ";
                     std::cout << termcolor::reset << "";
                     getline(std::cin, dest_username);
                     write_helper(vector2string(std::vector<std::string>({"getmessages", dest_username})));

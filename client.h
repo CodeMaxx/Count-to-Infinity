@@ -66,8 +66,8 @@ public:
     void add_group_message(std::vector<std::string> msg);
     void update_group(std::vector<std::string> msg); // add new group
     void remove_from_group(std::vector<std::string> msg); // remove user from group
-    void remove_group(std::vector<std::string> msg);
-    
+    void remove_group(std::vector<std::string> msg); // delete group
+
     void print_all_users();
     void print_online_users();
     void print_friends(); 
