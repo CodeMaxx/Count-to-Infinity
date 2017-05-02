@@ -168,7 +168,7 @@ void chat::error(const char *msg)
     exit(0);
 }
 
-void remove_from_list(std::vector<identity*> list, identity* id){
+void remove_from_list(std::vector<identity*> &list, identity* id){
    auto pos = list.begin();
     for (;pos != list.end(); pos++) {
         if(*pos == id) {
@@ -296,6 +296,7 @@ void chat::read_thread()
             else
                 buffer_str.append(buffer);
         }
+        printf("%s\n", buffer_str.c_str());
         auto messageVector = string2vector(buffer_str);
         if(messageVector[0] == "login") {
             loggedin = true;
@@ -340,7 +341,6 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "ublock") {
             std::cout << "You have blocked " + messageVector[1] + ". Type /unblock " + messageVector[1] + " to unblock and start chatting.";
-            
         }
         else if(messageVector[0] == "blocked") {
             std::cout << messageVector[1] + " has been blocked. You will not be able to reach him/her anymore. Use /unblock to unblock" << std::endl;
@@ -363,8 +363,9 @@ void chat::read_thread()
         }
         else if(messageVector[0] == "accepted") {
             std::cout << "You are now friends with " + messageVector[1] << std::endl;
-            removeFriendRequest(messageVector);
             update_friend(messageVector);
+            removeFriendRequest(messageVector);
+            update_online(messageVector);
         }
         else if(messageVector[0] == "acceptedyour") {
             std::cout << messageVector[1] + " accepted your friend request" << std::endl;

@@ -1111,7 +1111,7 @@ void online_notify(std::string username) {
 // Notify a user if someone goes offline
 void offline_notify(std::string username) {
     for (int socket : logged_in_sockets) {
-        write_to_socket(socket, vector2string(std::vector<std::string>({"offline", username})));
+        write_to_socket(socket, vector2string(std::vector<std::string>({"offline", username, get_current_time()})));
     }
 }
 
