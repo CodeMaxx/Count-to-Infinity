@@ -262,7 +262,6 @@ bool find_ldap_username(std::string username) {
     int desired_version = LDAP_VERSION3;
     char ldap_host[24]     = "cs252lab.cse.iitb.ac.in";
 
-
     if ((ld = ldap_init(ldap_host, LDAP_PORT)) == NULL ) {
         perror( "ldap_init failed" );
         exit( EXIT_FAILURE );
@@ -279,6 +278,8 @@ bool find_ldap_username(std::string username) {
 
     /* return everything */
     std::string filter = "cn=" + username;
+
+
 
     LDAPMessage* msg;
 
@@ -1037,8 +1038,8 @@ std::string get_group_name_from_id(sqlite3* db, char* zErrMsg, int group_chat_id
 
 std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std::string username){
     std::vector<std::string> group_name_vec;
-    group_name_vec.push_back("groups");
-    std::string query = "Select * from chats_users_xref where and username = '" + username +"'";
+    std::cout << username << std::endl;
+    std::string query = "Select * from chats_users_xref where username = '" + username +"'";
     struct sqlite3_stmt *selectstmt;
     int result = sqlite3_prepare_v2(db, query.c_str(), -1, &selectstmt, NULL);
 
@@ -1046,6 +1047,7 @@ std::vector<std::string> get_groups_for_username(sqlite3* db, char* zErrMsg, std
        while (sqlite3_step(selectstmt) == SQLITE_ROW){
             int group_chat_id = sqlite3_column_int(selectstmt, 1);
             std::string gp_name = get_group_name_from_id(db, zErrMsg, group_chat_id);
+            printf("%s\n", gp_name.c_str());
             if(gp_name != "individual_chat"){
                 group_name_vec.push_back(gp_name);
             }
@@ -1252,7 +1254,7 @@ void control_thread() {
 
                         std::vector<std::string> all_users = get_all_users(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(all_users));
-                        std::vector<std::string> all_groups = get_groups_for_username(db, zErrMsg, messageVector[1]);
+                        std::vector<std::string> all_groups = get_group_name_and_user_list(db, zErrMsg, messageVector[1]);
                         write_to_socket(sockfd,vector2string(all_groups));
                     }
                     else {
@@ -1384,21 +1386,6 @@ void control_thread() {
                         }
                     }
                 }
-                else if(messageVector[0] == "reject") // Reject friend request
-                {
-                    std::string source;
-                    if ((source = get_username(sockfd, db, zErrMsg)) != "") {
-                        int check = check_friend(db, zErrMsg, source, messageVector[1]);
-                        if(check == -1) {
-                            // Reject Friend Request
-                            int destsockfd;
-                            destsockfd = get_socket(messageVector[1], db, zErrMsg);
-                            reject_friend_req(db, zErrMsg, source, messageVector[1]);
-                            write_to_socket(sockfd, vector2string(std::vector<std::string>({"rejected", messageVector[1]})));
-                            write_to_socket(destsockfd, vector2string(std::vector<std::string>({"rejectedyour", source})));
-                        }
-                    }
-                }
                 else if(messageVector[0] == "getmessages") // Get all messages for a user
                 {
                     std::string source;
@@ -1422,7 +1409,7 @@ void control_thread() {
                         std::cout << x << std::endl;
                     }
                 }
-                else if(messageVector[0] == "leaveg") {
+                else if(messageVector[0] == "leavegroup") {
                     leave_group(db, zErrMsg, messageVector[1], get_username(sockfd, db, zErrMsg));
                 }
                 else if(messageVector[0] == "") {

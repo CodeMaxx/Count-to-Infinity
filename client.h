@@ -27,6 +27,7 @@ public:
     std::vector<identity*> friends; // Vector containing username of all friends
     std::vector<identity*> all; // Vector containing username of all users who have not blocked this person
     std::vector<identity*> friendRequests; // Vector containing people who sent this person friendRequest
+    std::vector<group*> all_groups;
     std::unordered_map<std::string, identity*> username2identity; // username to *identity hash map
     std::unordered_map<std::string, group*> groupname2group;
     // std::unordered_map<std::string, std::vector<message> > group_messages; // key: group name
@@ -68,6 +69,7 @@ public:
     void print_online_users();
     void print_friends(); 
     void print_friend_requests(); 
+    void print_all_groups();
 
     void connect_to_server(char* server_name, int port_num);
     void start_chat();

@@ -61,6 +61,18 @@ void chat::print_friend_requests() {
         std::cout << "Sorry, but no friend requests yet" << std::endl;
     }
 }
+void chat::print_all_groups() {
+    if(all_groups.size() > 0) {
+        std::cout << "List of groups: " << std::endl;
+        std::cout << "Group name" << std::endl;
+        for (auto x : all_groups) {
+            std::cout << x->groupname << std::endl;
+        }
+    }
+    else {
+        std::cout << "You are not in any group as of now" << std::endl;
+    }
+}
 
 void chat::initialise_database(std::vector<std::string> msg) {
     msg.erase(msg.begin());
@@ -224,6 +236,7 @@ void chat::update_groups(std::vector<std::string> msg) {
             if(msg[i] == "group") {
                 if(grp != NULL) {
                     groupname2group[grp->groupname] = grp;
+                    all_groups.push_back(grp);
                 }
                 start = i;
                 grp = new group();
@@ -238,6 +251,7 @@ void chat::update_groups(std::vector<std::string> msg) {
         if(i != 1) {
             if(grp != NULL) {
                 groupname2group[grp->groupname] = grp;
+                all_groups.push_back(grp);
             }
         }
     }
@@ -435,6 +449,7 @@ void chat::print_help() {
     printf("/showOnline - Lists all online users\n");
     printf("/showFriends - Lists your friends\n");
     printf("/showFR (or) /showFriendRequests0 - Lists your friends\n");
+    printf("/showgroups - Lists the groups that you are part of \n");
 
     printf("-----> Groups <----- \n"); 
     printf("/showgroups - Lists all groups you are in \n");
@@ -643,10 +658,13 @@ void chat::write_thread()
                     write_helper(vector2string(std::vector<std::string>({"getgroupmessages", dest})));
                 }
                 else if(command.substr(0, strlen("/showgroups")).compare("/showgroups") == 0) {
-                    
+                    print_all_groups();
                 }
                 else if(command.substr(0, strlen("/leavegroup")).compare("/leavegroup") == 0) {
-
+                    std::string group;
+                    std::cout << "Group name: " << std::endl;
+                    std::cin >> group;
+                    write_helper(vector2string(std::vector<std::string>({"leavegroup", group})));
                 }
 
             }
