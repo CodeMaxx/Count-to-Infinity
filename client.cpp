@@ -1,5 +1,7 @@
 #include "client.h"
 #include "utils.cpp"
+#include <termcolor/termcolor.hpp>
+
 
 // int chat::portno = 9399;
 // bool chat::loggedin = false;
@@ -17,8 +19,9 @@ void chat::print_all_users() {
         }
     }
     else {
-        std::cout << "There are no users " << std::endl;
-        std::cout << "It's so lonely, call over other people onto this cli rtm" << std::endl;
+        std::cout << termcolor::red<<"There are no users \n"
+        std::cout << termcolor::red<<"It's so lonely, call over other people onto this cli rtm";
+        std::cout << termcolor::reset << "\n";
     }
 }
 
@@ -31,7 +34,8 @@ void chat::print_online_users() {
         }
     }
     else {
-        std::cout << "I guess there are no users online now" << std::endl;
+        std::cout << termcolor::red<< "No users online now";
+        std::cout << termcolor::reset << "\n";
     }
 }
 
@@ -44,8 +48,9 @@ void chat::print_friends() {
         }
     }
     else {
-        std::cout << "You have no friends" << std::endl;
-        std::cout << "Oh! so lonely. Send request to random people if you will" << std::endl;
+        std::cout << termcolor::red<<"You have no friends" << std::endl;
+        std::cout << termcolor::red<<"Oh! so lonely. Send request to random people if you will";
+        std::cout << termcolor::reset << "\n";
     }
 }
 
@@ -58,7 +63,8 @@ void chat::print_friend_requests() {
         }   
     }
     else {
-        std::cout << "Sorry, but no friend requests yet" << std::endl;
+        std::cout << termcolor::red<<"Sorry, no friend requests yet";
+        std::cout << termcolor::reset << "\n";
     }
 }
 
@@ -303,86 +309,108 @@ void chat::read_thread()
         auto messageVector = string2vector(buffer_str);
         if(messageVector[0] == "login") {
             loggedin = true;
-            std::cout << "Logged in as " << messageVector[1] << std::endl; 
+            std::cout <<termcolor::green<< "Logged in as " << messageVector[1]; 
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "wrong") {
-            printf("Wrong username/password\n");
+            std::cout << termcolor::red<< "Wrong username/password";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "logout") {
-            printf("You have logged out\n" );
+            std::cout <<termcolor::green<<"You have logged out";
             loggedin = false;
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "registersuccess") {
-            printf("You have registered successfully \n");
+            std::cout <<termcolor::green<<"You have registered successfully";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "users") {
             initialise_database(messageVector);
         }
         else if(messageVector[0] == "online") {
-            std::cout << messageVector[1] << " came online now" << std::endl; 
+            std::cout << termcolor::green<< messageVector[1] << " came online now" << std::endl; 
             update_online(messageVector);
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "offline") {
-            std::cout << messageVector[1] << " went offline" << std::endl;
+            std::cout << termcolor::red<< messageVector[1] << " went offline" << std::endl;
             update_offline(messageVector);
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "message") {
             if(dest_username == messageVector[1])
-                std::cout << messageVector[1] << ": " << messageVector[2] << std::endl;
+                std::cout << termcolor::blue<<messageVector[1] << ": " << messageVector[2];
             else
-                std::cout << "You have a new message from " + messageVector[1] << std::endl;
+                std::cout <<termcolor::green<< "You have a new message from " + messageVector[1];
             add_message(messageVector);
+            std::cout << termcolor::reset << "\n";
+
         }
         else if(messageVector[0] == "sendreq"){
-            std:: cout << "You need to send a friend request to " + messageVector[1] + " first" << std::endl;
+            std:: cout <<termcolor::red<< "You need to send a friend request to " + messageVector[1] + " first";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "nfound"){
-            std:: cout << "This user does not exist. Please enter a valid username to chat." << std::endl;
-        }
+            std:: cout << termcolor::red<< "This user does not exist. Please enter a valid username to chat.";
+            std::cout << termcolor::reset << "\n";
+        } 
         else if(messageVector[0] == "acreq") {
-            std:: cout << "Please accept the friend request from " + messageVector[1] + " to start chatting" << std::endl;
+            std:: cout << termcolor::red<< "Please accept the friend request from " + messageVector[1] + " to start chatting";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "notacreq") {
-            std:: cout << messageVector[1] + " has not yet accepted your friend request. You cannot chat." << std::endl;
+            std:: cout << termcolor::red<< messageVector[1] + " has not yet accepted your friend request. You cannot chat.";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "ublock") {
-            std::cout << "You have blocked " + messageVector[1] + ". Type /unblock " + messageVector[1] + " to unblock and start chatting.";
+            std::cout << termcolor::red<< "You have blocked " + messageVector[1] + ". Type /unblock " + messageVector[1] + " to unblock and start chatting.";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "blocked") {
-            std::cout << messageVector[1] + " has been blocked. You will not be able to reach him/her anymore. Use /unblock to unblock" << std::endl;
+            std::cout << termcolor::red<< messageVector[1] + " has been blocked. You will not be able to reach him/her anymore. Use /unblock to unblock";
+            std::cout << termcolor::reset << "\n";
             update_block(messageVector);
         }
         else if(messageVector[0] == "unblocked") {
-            std::cout << "Unblocked " + messageVector[1] << std::endl;
+            std::cout << termcolor::green<<"Unblocked " + messageVector[1];
+            std::cout << termcolor::reset << "\n";
             update_friend(messageVector);
         }
         else if(messageVector[0] == "notblocked") {
-            std::cout << messageVector[1] + " was never blocked.";
+            std::cout << termcolor::green<< messageVector[1] + " was never blocked.";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "sentreq") {
-            std::cout << "Sent a friend request to " + messageVector[1] << std::endl;
+            std::cout << termcolor::green<<"Sent a friend request to " + messageVector[1];
+            std::cout << termcolor::reset << "\n";
             
         }
         else if(messageVector[0] == "recvreq") {
-            std::cout << "You received a friend request from " + messageVector[1] << std::endl;
+            std::cout << termcolor::green<< "You received a friend request from " + messageVector[1];
+            std::cout << termcolor::reset << "\n";
             updateFriendRequests(messageVector);
         }
         else if(messageVector[0] == "accepted") {
-            std::cout << "You are now friends with " + messageVector[1] << std::endl;
+            std::cout << termcolor::green<< "You are now friends with " + messageVector[1];
+            std::cout << termcolor::reset << "\n";
             update_friend(messageVector);
             removeFriendRequest(messageVector);
             update_online(messageVector);
         }
         else if(messageVector[0] == "acceptedyour") {
-            std::cout << messageVector[1] + " accepted your friend request" << std::endl;
+            std::cout << termcolor::green<< messageVector[1] + " accepted your friend request";
+            std::cout << termcolor::reset << "\n";
             update_friend(messageVector);
         }
         else if(messageVector[0] == "rejected") {
-            std::cout << "Rejected friend request from " + messageVector[1] << std::endl;
+            std::cout << termcolor::red<< "You have rejected the friend request from " + messageVector[1];
+            std::cout << termcolor::reset << "\n";
             removeFriendRequest(messageVector);
         }
         else if(messageVector[0] == "rejectedyour") {
-            std::cout << messageVector[1] + " rejected your friend request" << std::endl;
+            std::cout << termcolor::red<< messageVector[1] + " rejected your friend request";
+            std::cout << termcolor::reset << "\n";
         }
         else if(messageVector[0] == "groups") {
             update_groups(messageVector);
@@ -391,48 +419,51 @@ void chat::read_thread()
             update_new(messageVector);
         }
         else if(messageVector[0] == "regexists") {
-            std::cout << "Username already exists. Please register with a different username." <<  std::endl;
+            std::cout << termcolor::red<< "Username already exists. Please register with a different username.";
+            std::cout << termcolor::reset << "\n";
         }
     }
 }
 
 void chat::print_help() {
-    printf("-----> General <----- \n"); 
-    printf("/help - To get help\n");
-    printf("/register - To start registration process\n");
-    printf("/login [username] [password]\n");
-    printf("/logout - To logout and quit\n");
+    std::cout << "\n\n";
+    std::cout << termcolor::yellow<<  "-----> General <----- \n"; 
+    std::cout << termcolor::yellow<<"/help - To get help\n";
+    std::cout << termcolor::yellow<<"/register - To start registration process\n";
+    std::cout << termcolor::yellow<<"/login [username] [password]\n";
+    std::cout << termcolor::yellow<<"/logout - To logout and quit\n\n";
     
-    printf("-----> Chat (one - one) <----- \n"); 
-    printf("/chat [Friend's Username] - To chat with a friend\n");
-    printf("/showall - Lists all registered users\n");
-    printf("/showOnline - Lists all online users\n");
-    printf("/showFriends - Lists your friends\n");
-    printf("/showFR (or) /showFriendRequests0 - Lists your friends\n");
+    std::cout << termcolor::yellow<<"-----> Chat (one - one) <----- \n"; 
+    std::cout << termcolor::yellow<<"/chat [Friend's Username] - To chat with a friend\n";
+    std::cout << termcolor::yellow<<"/showall - Lists all registered users\n";
+    std::cout << termcolor::yellow<<"/showOnline - Lists all online users\n";
+    std::cout << termcolor::yellow<<"/showFriends - Lists your friends\n";
+    std::cout << termcolor::yellow<<"/showFR (or) /showFriendRequests0 - Lists your friends\n\n";
 
-    printf("-----> Groups <----- \n"); 
-    printf("/showgroups - Lists all groups you are in \n");
-    printf("/creategroup [username(s)] - Creates a group containing [username(s)] \n");
-    printf("/groupchat - Lists all online users \n");
-    printf("/leavegroup - Leave the group \n");
+    std::cout << termcolor::yellow<<"-----> Groups <----- \n"; 
+    std::cout << termcolor::yellow<<"/showgroups - Lists all groups you are in \n";
+    std::cout << termcolor::yellow<<"/creategroup [username(s)] - Creates a group containing [username(s)] \n";
+    std::cout << termcolor::yellow<<"/groupchat - Lists all online users \n";
+    std::cout << termcolor::yellow<<"/leavegroup - Leave the group \n\n";
 
-    printf("-----> Friend Requests / Blocking <----- \n"); 
-    printf("/friend [username] - Send a friend request to [username] \n");
-    printf("/accept [username] - Accepts the friend request from [username] \n");
-    printf("/reject [username] - Reject friend request from [username] \n");
-    printf("/block [username] - Blocks [username] \n");
-    printf("/unblock [username] - Unblocks [username] \n");
+    std::cout << termcolor::yellow<<"-----> Friend Requests / Blocking <----- \n"; 
+    std::cout << termcolor::yellow<<"/friend [username] - Send a friend request to [username] \n";
+    std::cout << termcolor::yellow<<"/accept [username] - Accepts the friend request from [username] \n";
+    std::cout << termcolor::yellow<<"/reject [username] - Reject friend request from [username] \n";
+    std::cout << termcolor::yellow<<"/block [username] - Blocks [username] \n";
+    std::cout << termcolor::yellow<<"/unblock [username] - Unblocks [username] \n\n";
     
 
-    printf("-----> Misc <----- \n"); 
-    printf("/sendfile - To send file to friend\n");
-    printf("/setStatus - Set a status for yourself \n");
+    std::cout << termcolor::yellow<<"-----> Misc <----- \n"; 
+    std::cout << termcolor::yellow<<"/sendfile - To send file to friend\n";
+    std::cout << termcolor::reset<<"/setStatus - Set a status for yourself \n\n";
 }
 
 bool check_valid_username(std::string username){
     int len = username.length();
     if(len < 6 || len > 30){
-        std::cout << "Invalid username. Username should contain at least 6 and not more than 30 characters" << std::endl;
+        std::cout << termcolor::red<<"Invalid username. Username should contain at least 6 and not more than 30 characters";
+        std::cout << termcolor::reset<<"\n";
         return false;
     }
     return true;
@@ -441,11 +472,13 @@ bool check_valid_username(std::string username){
 bool check_valid_password(std::string password){
     int len = password.length();
     if(len < 6){
-        std::cout << "Password should contain at least 6 characters" << std::endl;
+        std::cout << termcolor::red<<"Password should contain at least 6 characters";
+        std::cout << termcolor::reset<<"\n";
         return false;
     }
     if(password.find('#') != std::string::npos){
-        printf("Password should not contain '#'\n");
+        std::cout << termcolor::red<<"Password should not contain '#'";
+        std::cout << termcolor::reset<<"\n";
         return false;
     }
     return true;
@@ -453,7 +486,8 @@ bool check_valid_password(std::string password){
 
 bool check_valid_name(std::string name){
     if(name.empty()){
-        std::cout << "Name should contain at least one character.";
+        std::cout << termcolor::red<<"Name should contain at least one character.";
+        std::cout << termcolor::reset<<"\n";
         return false;
     }
     return true;
@@ -627,7 +661,8 @@ void chat::write_thread()
 
             if(command.substr(0, strlen("/exit")).compare("/exit") == 0)
             {
-                std::cout << "Exiting..." <<  std::endl;
+                std::cout << termcolor:: green << "Exiting..." ;
+                std::cout << termcolor::reset << "\n";
                 exit(0);
             }
 
@@ -641,7 +676,8 @@ void chat::write_thread()
                 write_helper(vector2string(messageVector));
             }
             else {
-                std::cout << "Please select a person to chat. More details on /help page" << std::endl;
+                std::cout <<termcolor::red <<"Please select a person to chat. More details on /help page";
+                std::cout << termcolor::reset << "\n";
             }
         }
         else
