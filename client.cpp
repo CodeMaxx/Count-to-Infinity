@@ -198,6 +198,7 @@ void chat::update_group(std::vector<std::string> msg){
     }
 
     group * grp = new group(group_name, grp_users);
+    all_groups.push_back(grp);
     groupname2group[group_name] = grp;
 
 }
