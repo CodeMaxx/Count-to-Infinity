@@ -5,6 +5,8 @@
 **Dependencies**
  [libsodium](https://github.com/jedisct1/libsodium) 
 
+The Android Chat client source code is available [here](https://github.com/tastelessjolt/android-chat-client).
+
 **Contributors:**
 
 [Akash Trehan](https://github.com/CodeMaxx) | 
